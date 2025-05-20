@@ -10,6 +10,7 @@ const {
     handleUpdateUniversity,
     handleDeleteUniversity,
     handleGetUniversityByUid,
+    handleUniversityLogin
 } = require("./university/university-middle-controler.js");
 
 // Import controllers for batches
