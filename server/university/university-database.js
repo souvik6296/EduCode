@@ -117,7 +117,7 @@ async function loginUniversity(email, password) {
     try {
         const { data, error } = await supabaseClient
             .from("universities")
-            .select("uid, name, email, password")
+            .select("uid, uni_name, uni_mail_id, password")
             .eq("email", email)
             .eq("password", password)
             .single(); // Ensures only one record is returned
