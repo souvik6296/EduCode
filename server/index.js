@@ -42,6 +42,7 @@ const {
     handleGetCourseByIdMetadata,
     handleUpdateCourseMetadata,
     handleDeleteCourseMetadata,
+    handleGetCoursesByBatchId,
 } = require("./courses/course-middle-controler.js");
 
 
@@ -110,6 +111,7 @@ app.get("/coursesmetadata", handleGetAllCoursesMetadata); // Fetch all courses
 app.get("/coursesmetadata/:courseId", handleGetCourseByIdMetadata); // Fetch a course by ID
 app.put("/coursesmetadata/:courseId", handleUpdateCourseMetadata); // Update a course by ID
 app.delete("/coursesmetadata/:courseId", handleDeleteCourseMetadata); // Delete a course by ID
+app.get("/coursesmetadata/batch/:batchId", handleGetCoursesByBatchId); // Fetch courses by batch ID
 
 
 

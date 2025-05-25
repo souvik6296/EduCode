@@ -102,6 +102,26 @@ async function deleteCourse(courseId) {
     }
 }
 
+// Function to get courses by batch_id
+async function getCoursesByBatchId(batchId) {
+    try {
+        const { data, error } = await supabaseClient
+            .from("courses")
+            .select("*")
+            .eq("batch_id", batchId);
+
+        if (error) {
+            console.error("Error fetching courses by batch ID:", error);
+            return { success: false, message: "Failed to fetch courses by batch ID", error };
+        }
+
+        return { success: true, message: "Courses fetched successfully by batch ID", data };
+    } catch (err) {
+        console.error("Unexpected error during fetching courses by batch ID:", err);
+        return { success: false, message: "Unexpected error occurred", error: err };
+    }
+}
+
 // Export all functions
 export {
     insertCourse,
@@ -109,4 +129,5 @@ export {
     getCourseById,
     updateCourse,
     deleteCourse,
+    getCoursesByBatchId
 };

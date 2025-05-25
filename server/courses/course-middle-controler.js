@@ -4,6 +4,7 @@ import {
     getCourseById,
     updateCourse,
     deleteCourse,
+    getCoursesByBatchId
 } from "./courses-database.js";
 
 // Controller to handle inserting a new course
@@ -86,6 +87,25 @@ async function handleDeleteCourseMetadata(req, res) {
     }
 }
 
+
+// Controller to handle fetching courses by batch ID
+async function handleGetCoursesByBatchId(req, res) {
+    try {
+        const { batchId } = req.params; // Assuming the batch ID is sent as a URL parameter
+        const result = await getCoursesByBatchId(batchId);
+        if (result.success) {
+            res.status(200).json(result);
+        } else {
+            res.status(404).json(result); // Return 404 if no courses are found for the batch
+        }
+    } catch (error) {
+        console.error("Error in handleGetCoursesByBatchId:", error);
+        res.status(500).json({ success: false, message: "Unexpected error occurred", error });
+    }
+}
+
+
+
 // Export all controllers
 export {
     handleInsertCourseMetadata,
@@ -93,4 +113,5 @@ export {
     handleGetCourseByIdMetadata,
     handleUpdateCourseMetadata,
     handleDeleteCourseMetadata,
+    handleGetCoursesByBatchId
 };
