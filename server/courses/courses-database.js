@@ -5,15 +5,18 @@ async function insertCourse(course) {
     try {
         const { data, error } = await supabaseClient
             .from("courses")
-            .insert([course]);
+            .insert([course])
+            .select("course_id"); // This returns the course_id of the inserted course;
 
         if (error) {
             console.error("Error inserting course:", error);
             return { success: false, message: "Failed to insert course", error };
         }
+        
+        const courseId = data?.[0]?.course_id;
 
         console.log("Course inserted successfully:", data);
-        return { success: true, message: "Course inserted successfully", data };
+        return { success: true, message: "Course inserted successfully", courseId };
     } catch (err) {
         console.error("Unexpected error during course insertion:", err);
         return { success: false, message: "Unexpected error occurred", error: err };
