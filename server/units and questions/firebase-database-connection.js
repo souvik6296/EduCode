@@ -5,20 +5,61 @@ import { initializeApp } from "firebase/app";
 // Firebase configuration
 const firebaseConfig = {
     databaseURL: "https://ai-projects-d261b-default-rtdb.firebaseio.com/"
-  };
-  const firebaseApp = initializeApp(firebaseConfig);
+};
+const firebaseApp = initializeApp(firebaseConfig);
 
 const db = getDatabase(firebaseApp);
 
 // Function to add a new course
 async function addCourse(courseId, courseData) {
+    const result = {
+        success: true,
+        data: {
+            units: {}
+        }
+    };
+
     try {
-        const courseRef = ref(db, `EduCode/Courses/${courseId}`);
-        await set(courseRef, courseData);
-        return { success: true, message: "Course added successfully" };
+        const units = courseData.units || [];
+
+        for (const unit of units) {
+            // Push unit and get new key
+            const unitsRef = ref(db, `EduCode/Courses/${courseId}/units`);
+            const newUnitRef = push(unitsRef);
+            const unitId = newUnitRef.key;
+
+            const { 'sub-units': subUnits, ...unitDataWithoutSubUnits } = unit;
+
+            // Prepare sub-units map
+            const subUnitsResult = {};
+
+            if (Array.isArray(subUnits)) {
+                for (const subUnit of subUnits) {
+                    const subUnitsRef = ref(db, `EduCode/Courses/${courseId}/units/${unitId}/sub-units`);
+                    const newSubUnitRef = push(subUnitsRef);
+                    const subUnitId = newSubUnitRef.key;
+
+                    await set(newSubUnitRef, subUnit);
+                    subUnitsResult[subUnitId] = subUnit;
+                }
+            }
+
+            // Set unit (excluding sub-units), then add sub-units
+            await set(newUnitRef, {
+                ...unitDataWithoutSubUnits,
+                'sub-units': subUnitsResult // embed sub-units with pushed keys
+            });
+
+            result.data.units[unitId] = {
+                ...unitDataWithoutSubUnits,
+                'sub-units': subUnitsResult
+            };
+        }
+
+        return result;
     } catch (error) {
-        console.error("Error adding course:", error);
-        return { success: false, message: "Failed to add course", error };
+        console.error("Error adding units/sub-units:", error);
+        return { success: false, message: "Failed to add course units", error };
     }
 }
 
