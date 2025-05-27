@@ -56,7 +56,7 @@ async function addCourse(courseId, courseData) {
             };
         }
 
-        return result;
+        return {success: true, message: "Full Course Added Successfully"};
     } catch (error) {
         console.error("Error adding units/sub-units:", error);
         return { success: false, message: "Failed to add course units", error };
