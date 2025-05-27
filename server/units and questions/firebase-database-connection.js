@@ -103,18 +103,48 @@ async function deleteCourse(courseId) {
     }
 }
 
-// Function to add a unit to a course
+// Function to add a unit with sub-units pushed individually
 async function addUnit(courseId, unitData) {
     try {
+        // Create reference and push the unit (excluding sub-units for now)
         const unitsRef = ref(db, `EduCode/Courses/${courseId}/units`);
         const newUnitRef = push(unitsRef);
-        await set(newUnitRef, unitData);
-        return { success: true, message: "Unit added successfully", unitId: newUnitRef.key };
+        const unitId = newUnitRef.key;
+
+        const { "sub-units": subUnits, ...unitDataWithoutSubUnits } = unitData;
+
+        // Prepare object to hold pushed sub-units with their keys
+        const pushedSubUnits = {};
+
+        if (Array.isArray(subUnits)) {
+            for (const subUnit of subUnits) {
+                const subUnitsRef = ref(db, `EduCode/Courses/${courseId}/units/${unitId}/sub-units`);
+                const newSubUnitRef = push(subUnitsRef);
+                const subUnitId = newSubUnitRef.key;
+
+                await set(newSubUnitRef, subUnit);
+                pushedSubUnits[subUnitId] = subUnit;
+            }
+        }
+
+        // Now set the unit data along with pushed sub-units
+        await set(newUnitRef, {
+            ...unitDataWithoutSubUnits,
+            "sub-units": pushedSubUnits
+        });
+
+        return {
+            success: true,
+            message: "Unit and sub-units added successfully",
+            unitId: unitId,
+            subUnits: pushedSubUnits
+        };
     } catch (error) {
         console.error("Error adding unit:", error);
         return { success: false, message: "Failed to add unit", error };
     }
 }
+
 
 // Function to update a unit in a course
 async function updateUnit(courseId, unitId, updates) {
