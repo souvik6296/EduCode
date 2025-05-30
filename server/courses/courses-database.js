@@ -98,16 +98,16 @@ async function deleteCourse(courseId) {
             return { success: false, message: "Failed to delete course", error };
         }
 
-        const r = await deleteCourse(courseId);
-        const er = r.error;
-        if (r.success) {
+        // const r = await deleteCourse(courseId);
+        // const er = r.error;
+        // if (r.success) {
 
             console.log("Course deleted successfully:", data);
             return { success: true, message: "Course deleted successfully", data };
-        } else {
-            console.error("Error deleting course:", r.error);
-            return { success: false, message: "Failed to delete course",  er};
-        }
+        // } else {
+        //     console.error("Error deleting course:", r.error);
+        //     return { success: false, message: "Failed to delete course",  er};
+        // }
     } catch (err) {
         console.error("Unexpected error during course deletion:", err);
         return { success: false, message: "Unexpected error occurred", error: err };
