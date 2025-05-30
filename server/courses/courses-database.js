@@ -98,12 +98,21 @@ async function deleteCourse(courseId) {
             return { success: false, message: "Failed to delete course", error };
         }
 
+        try {
+            const courseRef = ref(db, `EduCode/Courses/${courseId}`);
+            await remove(courseRef);
+            console.log("Course deleted successfully:", data);
+            return { success: true, message: "Course deleted successfully", data };
+        } catch (error) {
+            console.error("Error deleting course:", error);
+            return { success: false, message: "Failed to delete course", error };
+        }
+
         // const r = await deleteCourse(courseId);
         // const er = r.error;
         // if (r.success) {
 
-            console.log("Course deleted successfully:", data);
-            return { success: true, message: "Course deleted successfully", data };
+
         // } else {
         //     console.error("Error deleting course:", r.error);
         //     return { success: false, message: "Failed to delete course",  er};
