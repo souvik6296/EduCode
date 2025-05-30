@@ -92,7 +92,7 @@ async function updateCourse(courseId, updates) {
 }
 
 // Function to delete a course
-async function deleteCourse(courseId) {
+async function deleteCourseDetails(courseId) {
     try {
         const courseRef = ref(db, `EduCode/Courses/${courseId}`);
         await remove(courseRef);
@@ -244,7 +244,7 @@ export {
     addCourse,
     getCourse,
     updateCourse,
-    deleteCourse,
+    deleteCourseDetails,
     addUnit,
     updateUnit,
     deleteUnit,

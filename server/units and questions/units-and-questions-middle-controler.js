@@ -2,7 +2,7 @@ import {
     addCourse,
     getCourse,
     updateCourse,
-    deleteCourse,
+    deleteCourseDetails,
     addUnit,
     updateUnit,
     deleteUnit,
@@ -66,7 +66,7 @@ async function handleUpdateCourse(req, res) {
 async function handleDeleteCourse(req, res) {
     try {
         const { courseId } = req.params; // Expecting courseId as a URL parameter
-        const result = await deleteCourse(courseId);
+        const result = await deleteCourseDetails(courseId);
         if (result.success) {
             res.status(200).json(result);
         } else {

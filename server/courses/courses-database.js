@@ -1,5 +1,5 @@
 import supabaseClient from "../supabase-client.js";
-// import { deleteCourse } from "../units and questions/firebase-database-connection.js";
+import { deleteCourseDetails } from "../units and questions/firebase-database-connection.js";
 
 // Function to insert a new course
 async function insertCourse(course) {
@@ -98,25 +98,26 @@ async function deleteCourse(courseId) {
             return { success: false, message: "Failed to delete course", error };
         }
 
-        try {
-            const courseRef = ref(db, `EduCode/Courses/${courseId}`);
-            await remove(courseRef);
+        // try {
+        //     const courseRef = ref(db, `EduCode/Courses/${courseId}`);
+        //     await remove(courseRef);
+        //     console.log("Course deleted successfully:", data);
+        //     return { success: true, message: "Course deleted successfully", data };
+        // } catch (error) {
+        //     console.error("Error deleting course:", error);
+        //     return { success: false, message: "Failed to delete course", error };
+        // }
+
+        const r = await deleteCourseDetails(courseId);
+        const er = r.error;
+        if (r.success) {
             console.log("Course deleted successfully:", data);
             return { success: true, message: "Course deleted successfully", data };
-        } catch (error) {
-            console.error("Error deleting course:", error);
-            return { success: false, message: "Failed to delete course", error };
+
+        } else {
+            console.error("Error deleting course:", r.error);
+            return { success: false, message: "Failed to delete course",  er};
         }
-
-        // const r = await deleteCourse(courseId);
-        // const er = r.error;
-        // if (r.success) {
-
-
-        // } else {
-        //     console.error("Error deleting course:", r.error);
-        //     return { success: false, message: "Failed to delete course",  er};
-        // }
     } catch (err) {
         console.error("Unexpected error during course deletion:", err);
         return { success: false, message: "Unexpected error occurred", error: err };
