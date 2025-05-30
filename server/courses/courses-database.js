@@ -1,4 +1,5 @@
 import supabaseClient from "../supabase-client.js";
+import { deleteCourse } from "../units and questions/firebase-database-connection.js";
 
 // Function to insert a new course
 async function insertCourse(course) {
@@ -12,7 +13,7 @@ async function insertCourse(course) {
             console.error("Error inserting course:", error);
             return { success: false, message: "Failed to insert course", error };
         }
-        
+
         const courseId = data?.[0]?.course_id;
 
         console.log("Course inserted successfully:", data);
@@ -97,8 +98,16 @@ async function deleteCourse(courseId) {
             return { success: false, message: "Failed to delete course", error };
         }
 
-        console.log("Course deleted successfully:", data);
-        return { success: true, message: "Course deleted successfully", data };
+        const r = await deleteCourse(courseId);
+        const er = r.error;
+        if (r.success) {
+
+            console.log("Course deleted successfully:", data);
+            return { success: true, message: "Course deleted successfully", data };
+        } else {
+            console.error("Error deleting course:", r.error);
+            return { success: false, message: "Failed to delete course",  er};
+        }
     } catch (err) {
         console.error("Unexpected error during course deletion:", err);
         return { success: false, message: "Unexpected error occurred", error: err };
