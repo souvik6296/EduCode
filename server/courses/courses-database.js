@@ -1,5 +1,5 @@
 import supabaseClient from "../supabase-client.js";
-import { deleteCourse } from "../units and questions/firebase-database-connection.js";
+// import { deleteCourse } from "../units and questions/firebase-database-connection.js";
 
 // Function to insert a new course
 async function insertCourse(course) {
