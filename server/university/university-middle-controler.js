@@ -4,12 +4,40 @@ import {
     updateUniversity,
     deleteUniversity,
     getUniversityByUid,
-    loginUniversity
+    loginUniversity,
+    uploadStudentsExcel
 } from "./university-database.js";
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 
 // This section contains the controller functions for handling requests related to universities.
+
+
+// Controller to handle uploading students Excel file
+async function handleUploadStudentsExcel(req, res) {
+    try {
+        const file = req.file; // File sent in the request
+        const { batchId, universityId } = req.body; // Extract batch_id and university_id from the request body
+
+        if (!file) {
+            return res.status(400).json({ success: false, message: "No file uploaded" });
+        }
+
+        if (!batchId || !universityId) {
+            return res.status(400).json({ success: false, message: "batchId and universityId are required" });
+        }
+
+        const result = await uploadStudentsExcel(file, batchId, universityId);
+        if (result.success) {
+            res.status(200).json(result);
+        } else {
+            res.status(400).json(result);
+        }
+    } catch (error) {
+        console.error("Error in handleUploadStudentsExcel:", error);
+        res.status(500).json({ success: false, message: "Unexpected error occurred", error });
+    }
+}
 
 // Controller to handle fetching all universities
 async function handleGetAllUniversities(req, res) {
@@ -119,5 +147,6 @@ export {
     handleUpdateUniversity,
     handleDeleteUniversity,
     handleGetUniversityByUid,
-    handleUniversityLogin
+    handleUniversityLogin,
+    handleUploadStudentsExcel
 };

@@ -2,6 +2,9 @@ import { getDatabase, ref, set, push, update, remove, get, child } from "firebas
 // import app from "../firebase-config.js";
 import { initializeApp } from "firebase/app";
 
+
+
+
 // Firebase configuration
 const firebaseConfig = {
     databaseURL: "https://ai-projects-d261b-default-rtdb.firebaseio.com/"
@@ -9,6 +12,12 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 
 const db = getDatabase(firebaseApp);
+
+
+
+
+
+
 
 // Function to add a new course
 async function addCourse(courseId, courseData) {
@@ -23,14 +32,12 @@ async function addCourse(courseId, courseData) {
         const units = courseData.units || [];
 
         for (const unit of units) {
-            // Push unit and get new key
+            // Push unit
             const unitsRef = ref(db, `EduCode/Courses/${courseId}/units`);
             const newUnitRef = push(unitsRef);
             const unitId = newUnitRef.key;
 
             const { 'sub-units': subUnits, ...unitDataWithoutSubUnits } = unit;
-
-            // Prepare sub-units map
             const subUnitsResult = {};
 
             if (Array.isArray(subUnits)) {
@@ -39,15 +46,54 @@ async function addCourse(courseId, courseData) {
                     const newSubUnitRef = push(subUnitsRef);
                     const subUnitId = newSubUnitRef.key;
 
-                    await set(newSubUnitRef, subUnit);
-                    subUnitsResult[subUnitId] = subUnit;
+                    const {
+                        mcq = [],
+                        coding = [],
+                        ...subUnitDataWithoutMcqCoding
+                    } = subUnit;
+
+                    const mcqResult = {};
+                    const codingResult = {};
+
+                    // Push MCQs
+                    for (const mcqItem of mcq) {
+                        const mcqRef = ref(db, `EduCode/Courses/${courseId}/units/${unitId}/sub-units/${subUnitId}/mcq`);
+                        const newMcqRef = push(mcqRef);
+                        const mcqId = newMcqRef.key;
+
+                        await set(newMcqRef, mcqItem);
+                        mcqResult[mcqId] = mcqItem;
+                    }
+
+                    // Push Coding Questions
+                    for (const codingItem of coding) {
+                        const codingRef = ref(db, `EduCode/Courses/${courseId}/units/${unitId}/sub-units/${subUnitId}/coding`);
+                        const newCodingRef = push(codingRef);
+                        const codingId = newCodingRef.key;
+
+                        await set(newCodingRef, codingItem);
+                        codingResult[codingId] = codingItem;
+                    }
+
+                    // Set sub-unit with mcqs and codings pushed
+                    await set(newSubUnitRef, {
+                        ...subUnitDataWithoutMcqCoding,
+                        mcq: mcqResult,
+                        coding: codingResult
+                    });
+
+                    subUnitsResult[subUnitId] = {
+                        ...subUnitDataWithoutMcqCoding,
+                        mcq: mcqResult,
+                        coding: codingResult
+                    };
                 }
             }
 
-            // Set unit (excluding sub-units), then add sub-units
+            // Set unit with its sub-units
             await set(newUnitRef, {
                 ...unitDataWithoutSubUnits,
-                'sub-units': subUnitsResult // embed sub-units with pushed keys
+                'sub-units': subUnitsResult
             });
 
             result.data.units[unitId] = {
@@ -56,12 +102,13 @@ async function addCourse(courseId, courseData) {
             };
         }
 
-        return {success: true, message: "Full Course Added Successfully"};
+        return { success: true, message: "Full Course Added Successfully" };
     } catch (error) {
         console.error("Error adding units/sub-units:", error);
         return { success: false, message: "Failed to add course units", error };
     }
 }
+
 
 // Function to get a course by course ID
 async function getCourse(courseId) {
@@ -104,46 +151,65 @@ async function deleteCourseDetails(courseId) {
 }
 
 // Function to add a unit with sub-units pushed individually
+// Function to add a unit with sub-units pushed individually along with their questions
 async function addUnit(courseId, unitData) {
     try {
-        // Create reference and push the unit (excluding sub-units for now)
+        // Push the unit (without sub-units for now)
         const unitsRef = ref(db, `EduCode/Courses/${courseId}/units`);
         const newUnitRef = push(unitsRef);
         const unitId = newUnitRef.key;
 
         const { "sub-units": subUnits, ...unitDataWithoutSubUnits } = unitData;
 
-        // Prepare object to hold pushed sub-units with their keys
+        // Set unit data without sub-units first
+        await set(newUnitRef, unitDataWithoutSubUnits);
+
         const pushedSubUnits = {};
 
         if (Array.isArray(subUnits)) {
             for (const subUnit of subUnits) {
+                const { questions, ...subUnitWithoutQuestions } = subUnit;
+
+                // Push sub-unit (excluding questions)
                 const subUnitsRef = ref(db, `EduCode/Courses/${courseId}/units/${unitId}/sub-units`);
                 const newSubUnitRef = push(subUnitsRef);
                 const subUnitId = newSubUnitRef.key;
 
-                await set(newSubUnitRef, subUnit);
-                pushedSubUnits[subUnitId] = subUnit;
+                await set(newSubUnitRef, subUnitWithoutQuestions);
+
+                const pushedQuestions = {};
+
+                if (Array.isArray(questions)) {
+                    for (const question of questions) {
+                        const questionsRef = ref(db, `EduCode/Courses/${courseId}/units/${unitId}/sub-units/${subUnitId}/questions`);
+                        const newQuestionRef = push(questionsRef);
+                        const questionId = newQuestionRef.key;
+
+                        await set(newQuestionRef, question);
+                        pushedQuestions[questionId] = question;
+                    }
+                }
+
+                pushedSubUnits[subUnitId] = {
+                    ...subUnitWithoutQuestions,
+                    questions: pushedQuestions
+                };
             }
         }
 
-        // Now set the unit data along with pushed sub-units
-        await set(newUnitRef, {
-            ...unitDataWithoutSubUnits,
-            "sub-units": pushedSubUnits
-        });
-
         return {
             success: true,
-            message: "Unit and sub-units added successfully",
-            unitId: unitId,
+            message: "Unit, sub-units, and questions added successfully",
+            unitId,
             subUnits: pushedSubUnits
         };
+
     } catch (error) {
         console.error("Error adding unit:", error);
         return { success: false, message: "Failed to add unit", error };
     }
 }
+
 
 
 // Function to update a unit in a course
@@ -186,13 +252,44 @@ async function getUnits(courseId) {
     }
 }
 
-// Function to add a sub-unit to a unit
+
+
+
+// Function to add a sub-unit with each question pushed individually
 async function addSubUnit(courseId, unitId, subUnitData) {
     try {
+        // Extract questions from the sub-unit data
+        const { questions, ...subUnitWithoutQuestions } = subUnitData;
+
+        // Push the sub-unit first (excluding questions)
         const subUnitsRef = ref(db, `EduCode/Courses/${courseId}/units/${unitId}/sub-units`);
         const newSubUnitRef = push(subUnitsRef);
-        await set(newSubUnitRef, subUnitData);
-        return { success: true, message: "Sub-unit added successfully", subUnitId: newSubUnitRef.key };
+        const subUnitId = newSubUnitRef.key;
+
+        // Set the basic sub-unit data
+        await set(newSubUnitRef, subUnitWithoutQuestions);
+
+        // Push each question individually with unique push ID
+        const pushedQuestions = {};
+
+        if (Array.isArray(questions)) {
+            for (const question of questions) {
+                const questionsRef = ref(db, `EduCode/Courses/${courseId}/units/${unitId}/sub-units/${subUnitId}/questions`);
+                const newQuestionRef = push(questionsRef);
+                const questionId = newQuestionRef.key;
+
+                await set(newQuestionRef, question);
+                pushedQuestions[questionId] = question;
+            }
+        }
+
+        return {
+            success: true,
+            message: "Sub-unit and questions added successfully",
+            subUnitId: subUnitId,
+            questions: pushedQuestions
+        };
+
     } catch (error) {
         console.error("Error adding sub-unit:", error);
         return { success: false, message: "Failed to add sub-unit", error };

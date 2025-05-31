@@ -2,6 +2,11 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const multer = require("multer"); 
+
+
+// Configure Multer
+const uploadMiddleware = multer({ dest: "uploads/" }); // Files will be stored in the 'uploads' folder
 
 // Import controllers for universities
 const {
@@ -10,7 +15,8 @@ const {
     handleUpdateUniversity,
     handleDeleteUniversity,
     handleGetUniversityByUid,
-    handleUniversityLogin
+    handleUniversityLogin,
+    handleUploadStudentsExcel
 } = require("./university/university-middle-controler.js");
 
 // Import controllers for batches
@@ -83,6 +89,7 @@ app.post("/universities", handleInsertUniversity); // Insert a new university
 app.put("/universities/:uid", handleUpdateUniversity); // Update a university by UID
 app.delete("/universities/:uid", handleDeleteUniversity); // Delete a university by UID
 app.post("/universities/login", handleUniversityLogin); // University login
+app.post("/universities/upload-students", uploadMiddleware.single("file"), handleUploadStudentsExcel); //
 
 // Routes for Batches
 // --------------------------------------------------------------------------------
