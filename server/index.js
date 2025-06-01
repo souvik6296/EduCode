@@ -6,7 +6,8 @@ const multer = require("multer");
 
 
 // Configure Multer
-const uploadMiddleware = multer({ dest: "uploads/" }); // Files will be stored in the 'uploads' folder
+// const uploadMiddleware = multer({ dest: "uploads/" }); // Files will be stored in the 'uploads' folder
+const uploadMiddleware = multer({ storage: multer.memoryStorage() });
 
 // Import controllers for universities
 const {
