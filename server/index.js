@@ -40,6 +40,7 @@ const {
     handleUpdateStudent,
     handleDeleteStudent,
     handleStudentLogin,
+    handleGetCourseMetadataByBatchId,
 } = require("./students/students-middle-controler.js");
 
 // Import controllers for courses
@@ -111,6 +112,7 @@ app.get("/students/batch/:batchId", handleGetStudentsByBatchId); // Fetch studen
 app.put("/students/:studentId", handleUpdateStudent); // Update a student by ID
 app.delete("/students/:studentId", handleDeleteStudent); // Delete a student by ID
 app.post("/students/login", handleStudentLogin); // Student login
+app.get("/students/course-metadata/batch/:batchId", handleGetCourseMetadataByBatchId); // Fetch course metadata by batch ID
 
 // Routes for Courses
 // --------------------------------------------------------------------------------

@@ -7,6 +7,7 @@ import {
     updateStudent,
     deleteStudent,
     loginStudent,
+    getCourseMetadataByBatchId
 } from "./student-database.js";
 
 // Controller to handle inserting a new student
@@ -137,6 +138,22 @@ async function handleStudentLogin(req, res) {
     }
 }
 
+// Controller to handle fetching course metadata by batch ID
+async function handleGetCourseMetadataByBatchId(req, res) {
+    try {
+        const { batchId } = req.params; // Assuming the batch ID is sent as a URL parameter
+        const result = await getCourseMetadataByBatchId(batchId);
+        if (result.success) {
+            res.status(200).json(result);
+        } else {
+            res.status(404).json(result); // Return 404 if no metadata is found
+        }
+    } catch (error) {
+        console.error("Error in handleGetCourseMetadataByBatchId:", error);
+        res.status(500).json({ success: false, message: "Unexpected error occurred", error });
+    }
+}
+
 // Export all controllers
 export {
     handleInsertStudent,
@@ -146,5 +163,6 @@ export {
     handleGetStudentsByBatchId,
     handleUpdateStudent,
     handleDeleteStudent,
+    handleGetCourseMetadataByBatchId,
     handleStudentLogin,
 };

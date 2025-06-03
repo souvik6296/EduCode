@@ -165,6 +165,51 @@ async function loginStudent(userId, password) {
     }
 }
 
+
+// ...existing code...
+
+// Function to get course metadata for a given batch
+async function getCourseMetadataByBatchId(batchId) {
+    try {
+        // Get registered_courses_id field from the batches table
+        const { data: batchData, error: batchError } = await supabaseClient
+            .from("batches")
+            .select("registered_courses_id")
+            .eq("batch_id", batchId)
+            .single();
+
+        if (batchError) {
+            console.error("Error fetching batch data:", batchError);
+            return { success: false, message: "Failed to fetch batch information", error: batchError };
+        }
+
+        const courseIds = batchData.registered_courses_id;
+
+        // If no courses are registered, return an empty array
+        if (!courseIds || !Array.isArray(courseIds) || courseIds.length === 0) {
+            return { success: true, message: "No courses registered for this batch", data: [] };
+        }
+
+        // Fetch course metadata from the courses table for each course ID
+        const { data: courses, error: coursesError } = await supabaseClient
+            .from("courses")
+            .select("*")
+            .in("course_id", courseIds);
+
+        if (coursesError) {
+            console.error("Error fetching course metadata:", coursesError);
+            return { success: false, message: "Failed to fetch course metadata", error: coursesError };
+        }
+
+        return { success: true, message: "Course metadata fetched successfully", data: courses };
+    } catch (err) {
+        console.error("Unexpected error fetching course metadata:", err);
+        return { success: false, message: "Unexpected error occurred", error: err };
+    }
+}
+
+
+
 // Export all functions
 export {
     insertStudent,
@@ -175,4 +220,5 @@ export {
     updateStudent,
     deleteStudent,
     loginStudent,
+    getCourseMetadataByBatchId
 };
