@@ -1,5 +1,19 @@
 
 import supabaseClient from "../supabase-client.js";
+import { getDatabase, ref, set, push, update, remove, get, child } from "firebase/database";
+// import app from "../firebase-config.js";
+import { initializeApp } from "firebase/app";
+
+
+
+
+// Firebase configuration
+const firebaseConfig = {
+    databaseURL: "https://ai-projects-d261b-default-rtdb.firebaseio.com/"
+};
+const firebaseApp = initializeApp(firebaseConfig);
+
+const db = getDatabase(firebaseApp);
 
 // Function to insert a new student
 async function insertStudent(student) {
@@ -210,6 +224,24 @@ async function getCourseMetadataByBatchId(batchId) {
 
 
 
+// Function to get a course by course ID
+async function getCourseforStudents(courseId) {
+    try {
+        const courseRef = ref(db, `EduCode/Courses/${courseId}`);
+        const snapshot = await get(courseRef);
+        if (snapshot.exists()) {
+            return { success: true, data: snapshot.val() };
+        } else {
+            return { success: false, message: "Course not found" };
+        }
+    } catch (error) {
+        console.error("Error fetching course:", error);
+        return { success: false, message: "Failed to fetch course", error };
+    }
+}
+
+
+
 // Export all functions
 export {
     insertStudent,
@@ -220,5 +252,6 @@ export {
     updateStudent,
     deleteStudent,
     loginStudent,
-    getCourseMetadataByBatchId
+    getCourseMetadataByBatchId,
+    getCourseforStudents
 };

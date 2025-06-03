@@ -7,7 +7,8 @@ import {
     updateStudent,
     deleteStudent,
     loginStudent,
-    getCourseMetadataByBatchId
+    getCourseMetadataByBatchId,
+    getCourseforStudents
 } from "./student-database.js";
 
 // Controller to handle inserting a new student
@@ -154,6 +155,22 @@ async function handleGetCourseMetadataByBatchId(req, res) {
     }
 }
 
+// Controller to handle fetching a course by course ID
+async function handleGetCourseforStudents(req, res) {
+    try {
+        const { courseId } = req.params; // Expecting courseId as a URL parameter
+        const result = await getCourseforStudents(courseId);
+        if (result.success) {
+            res.status(200).json(result);
+        } else {
+            res.status(404).json(result); // Return 404 if the course is not found
+        }
+    } catch (error) {
+        console.error("Error in handleGetCourseforStudents:", error);
+        res.status(500).json({ success: false, message: "Unexpected error occurred", error });
+    }
+}
+
 // Export all controllers
 export {
     handleInsertStudent,
@@ -165,4 +182,5 @@ export {
     handleDeleteStudent,
     handleGetCourseMetadataByBatchId,
     handleStudentLogin,
+    handleGetCourseforStudents
 };
