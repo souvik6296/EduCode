@@ -148,7 +148,7 @@ async function loginStudent(userId, password) {
     try {
         const { data, error } = await supabaseClient
             .from("students")
-            .select("*")
+            .select("student_id, student_name, profile_image_link, batch_id, phone_num, uni_reg_id, section, email_id")
             .eq("user_id", userId)
             .eq("password", password)
             .single();
