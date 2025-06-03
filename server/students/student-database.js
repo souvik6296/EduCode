@@ -224,21 +224,42 @@ async function getCourseMetadataByBatchId(batchId) {
 
 
 
-// Function to get a course by course ID
+// Function to get a course by course ID without mcq or coding sections
 async function getCourseforStudents(courseId) {
     try {
         const courseRef = ref(db, `EduCode/Courses/${courseId}`);
         const snapshot = await get(courseRef);
-        if (snapshot.exists()) {
-            return { success: true, data: snapshot.val() };
-        } else {
+
+        if (!snapshot.exists()) {
             return { success: false, message: "Course not found" };
         }
+
+        const courseData = snapshot.val();
+
+        // Deep copy to avoid modifying original
+        const cleanCourseData = JSON.parse(JSON.stringify(courseData));
+
+        // Traverse and remove 'mcq' and 'coding' fields from sub-units
+        for (const unitId in cleanCourseData.units) {
+            const unit = cleanCourseData.units[unitId];
+            if (unit['sub-units']) {
+                for (const subUnitId in unit['sub-units']) {
+                    const subUnit = unit['sub-units'][subUnitId];
+
+                    // Remove 'mcq' and 'coding' keys if they exist
+                    delete subUnit.mcq;
+                    delete subUnit.coding;
+                }
+            }
+        }
+
+        return { success: true, data: cleanCourseData };
     } catch (error) {
         console.error("Error fetching course:", error);
         return { success: false, message: "Failed to fetch course", error };
     }
 }
+
 
 
 
