@@ -187,7 +187,7 @@ async function handleGetQuestionforStudent(req, res) {
             });
         }
 
-        const result = await getQuestionforStudent(courseId, unitId, subUnitId, studentId, questionType, shuffle);
+        const result = await getQuestionforStudent(courseId, unitId, subUnitId, studentId, questionType);
 
         if (result.success) {
             res.status(200).json(result);
