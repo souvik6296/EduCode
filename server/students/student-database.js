@@ -290,8 +290,8 @@ async function getQuestionforStudent(courseId, unitId, subUnitId, studentId, que
         let questionsToReturn = {};
 
         // Step 3: If resumed data exists, return those specific questions
-        if (resumeData && (resumeData.resumed_coding_question_ids?.length || resumeData.resumed_mcq_question_ids?.length)) {
-            if (questionType === "Coding") {
+        if (resumeData) {
+            if (questionType === "Coding" && resumeData.resumed_coding_question_ids?.length > 0) {
                 const coding = subUnitData.coding || {};
                 const selected = resumeData.resumed_coding_question_ids.map(id => {
                     const q = coding[id];
@@ -302,7 +302,7 @@ async function getQuestionforStudent(courseId, unitId, subUnitId, studentId, que
                 questionsToReturn.codingQuestions = selected;
             }
 
-            if (questionType === "MCQ") {
+            if (questionType === "MCQ" && resumeData.resumed_mcq_question_ids?.length > 0) {
                 const mcq = subUnitData.mcq || {};
                 const selected = resumeData.resumed_mcq_question_ids.map(id => mcq[id]).filter(Boolean);
                 questionsToReturn.mcqQuestions = selected;
