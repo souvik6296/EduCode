@@ -290,30 +290,36 @@ async function getQuestionforStudent(courseId, unitId, subUnitId, studentId, que
         let questionsToReturn = {};
 
         // Step 3: If resumed data exists, return those specific questions
-        if (resumeData) {
-            if (questionType === "Coding" && resumeData.resumed_coding_question_ids?.length > 0) {
-                const coding = subUnitData.coding || {};
-                const selected = resumeData.resumed_coding_question_ids.map(id => {
-                    const q = coding[id];
-                    if (!q) return null;
-                    const { ["compiler-code"]: _, ["hidden-test-cases"]: __, ...rest } = q;
-                    return { id, ...rest };
-                }).filter(Boolean);
-                questionsToReturn.codingQuestions = selected;
-            }
 
-            if (questionType === "MCQ" && resumeData.resumed_mcq_question_ids?.length > 0) {
-                const mcq = subUnitData.mcq || {};
-                const selected = resumeData.resumed_mcq_question_ids.map(id => mcq[id]).filter(Boolean);
-                questionsToReturn.mcqQuestions = selected;
-            }
-
+        if (resumeData && questionType === "Coding" && resumeData.resumed_coding_question_ids?.length > 0) {
+            const coding = subUnitData.coding || {};
+            const selected = resumeData.resumed_coding_question_ids.map(id => {
+                const q = coding[id];
+                if (!q) return null;
+                const { ["compiler-code"]: _, ["hidden-test-cases"]: __, ...rest } = q;
+                return { id, ...rest };
+            }).filter(Boolean);
+            questionsToReturn.codingQuestions = selected;
             return {
                 success: true,
                 message: "Resumed questions fetched successfully",
                 data: questionsToReturn
             };
         }
+
+        if (resumeData && questionType === "MCQ" && resumeData.resumed_mcq_question_ids?.length > 0) {
+            const mcq = subUnitData.mcq || {};
+            const selected = resumeData.resumed_mcq_question_ids.map(id => mcq[id]).filter(Boolean);
+            questionsToReturn.mcqQuestions = selected;
+            return {
+                success: true,
+                message: "Resumed questions fetched successfully",
+                data: questionsToReturn
+            };
+        }
+
+
+
 
         // Step 4: If no resumed data, pick fresh questions
         if (questionType === "Coding") {
