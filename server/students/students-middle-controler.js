@@ -8,7 +8,8 @@ import {
     deleteStudent,
     loginStudent,
     getCourseMetadataByBatchId,
-    getCourseforStudents
+    getCourseforStudents,
+    getQuestionforStudent
 } from "./student-database.js";
 
 // Controller to handle inserting a new student
@@ -171,6 +172,34 @@ async function handleGetCourseforStudents(req, res) {
     }
 }
 
+
+
+// Controller to handle fetching questions for a student
+async function handleGetQuestionforStudent(req, res) {
+    try {
+        const { courseId, unitId, subUnitId, studentId, questionType } = req.body; // Extract parameters from the request body
+
+        // Validate required parameters
+        if (!courseId || !unitId || !subUnitId || !studentId || !questionType) {
+            return res.status(400).json({
+                success: false,
+                message: "Missing required parameters: courseId, unitId, subUnitId, studentId, or questionType"
+            });
+        }
+
+        const result = await getQuestionforStudent(courseId, unitId, subUnitId, studentId, questionType, shuffle);
+
+        if (result.success) {
+            res.status(200).json(result);
+        } else {
+            res.status(404).json(result); // Return 404 if no questions are found
+        }
+    } catch (error) {
+        console.error("Error in handleGetQuestionforStudent:", error);
+        res.status(500).json({ success: false, message: "Unexpected error occurred", error });
+    }
+}
+
 // Export all controllers
 export {
     handleInsertStudent,
@@ -182,5 +211,6 @@ export {
     handleDeleteStudent,
     handleGetCourseMetadataByBatchId,
     handleStudentLogin,
-    handleGetCourseforStudents
+    handleGetCourseforStudents,
+    handleGetQuestionforStudent
 };

@@ -261,6 +261,116 @@ async function getCourseforStudents(courseId) {
 }
 
 
+async function getQuestionforStudent(courseId, unitId, subUnitId, studentId, questionType) {
+    try {
+        const unitPath = `EduCode/Courses/${courseId}/units/${unitId}/sub-units/${subUnitId}`;
+
+        // Step 1: Check the resumes table for resumed questions
+        const { data: resumeData, error: resumeError } = await supabaseClient
+            .from("resumes")
+            .select("resumed_coding_question_ids, resumed_mcq_question_ids")
+            .eq("student_id", studentId)
+            .eq("course_id", courseId)
+            .eq("unit_id", unitId)
+            .eq("sub_unit_id", subUnitId)
+            .single();
+
+        if (resumeError) {
+            console.error("Error fetching resume data:", resumeError);
+        }
+
+        // Step 2: Fetch the full sub-unit data from Firebase
+        const courseRef = ref(db, unitPath);
+        const snapshot = await get(courseRef);
+        if (!snapshot.exists()) {
+            return { success: false, message: "Sub-unit not found" };
+        }
+        const subUnitData = snapshot.val();
+
+        let questionsToReturn = {};
+
+        // Step 3: If resumed data exists, return those specific questions
+        if (resumeData && (resumeData.resumed_coding_question_ids?.length || resumeData.resumed_mcq_question_ids?.length)) {
+            if (questionType === "Coding") {
+                const coding = subUnitData.coding || {};
+                const selected = resumeData.resumed_coding_question_ids.map(id => {
+                    const q = coding[id];
+                    if (!q) return null;
+                    const { ["compiler-code"]: _, ["hidden-test-cases"]: __, ...rest } = q;
+                    return { id, ...rest };
+                }).filter(Boolean);
+                questionsToReturn.codingQuestions = selected;
+            }
+
+            if (questionType === "MCQ") {
+                const mcq = subUnitData.mcq || {};
+                const selected = resumeData.resumed_mcq_question_ids.map(id => mcq[id]).filter(Boolean);
+                questionsToReturn.mcqQuestions = selected;
+            }
+
+            return {
+                success: true,
+                message: "Resumed questions fetched successfully",
+                data: questionsToReturn
+            };
+        }
+
+        // Step 4: If no resumed data, pick fresh questions
+        if (questionType === "Coding") {
+            const codingQuestions = subUnitData.coding || {};
+            const questionToBeShown = subUnitData.question_to_be_shown || 2;
+
+            const codingArray = Object.entries(codingQuestions).map(([id, q]) => ({ id, ...q }));
+            const selected = codingArray.sort(() => Math.random() - 0.5).slice(0, questionToBeShown);
+
+            // Remove compiler-code & hidden-test-cases
+            const cleanSelected = selected.map(({ ["compiler-code"]: _, ["hidden-test-cases"]: __, ...rest }) => rest);
+
+            questionsToReturn.codingQuestions = cleanSelected;
+
+            // Save only question IDs
+            var codingIds = selected.map(q => q.id);
+        }
+
+        if (questionType === "MCQ") {
+            const mcqQuestions = subUnitData.mcq || {};
+            const shuffle = subUnitData["shuffle-questions"];
+            const mcqArray = Object.entries(mcqQuestions).map(([id, q]) => ({ id, ...q }));
+
+            const selected = shuffle ? mcqArray.sort(() => Math.random() - 0.5) : mcqArray;
+
+            questionsToReturn.mcqQuestions = selected;
+            var mcqIds = selected.map(q => q.id);
+        }
+
+        // Step 5: Save selected question IDs in resume
+        const resumePayload = {
+            student_id: studentId,
+            course_id: courseId,
+            unit_id: unitId,
+            sub_unit_id: subUnitId,
+            resumed_coding_question_ids: codingIds || [],
+            resumed_mcq_question_ids: mcqIds || []
+        };
+
+        const { error: saveResumeError } = await supabaseClient.from("resumes").upsert(resumePayload);
+        if (saveResumeError) {
+            console.error("Error saving resume data:", saveResumeError);
+            return { success: false, message: "Failed to save resume data", error: saveResumeError };
+        }
+
+        return {
+            success: true,
+            message: "Questions fetched successfully",
+            data: questionsToReturn
+        };
+    } catch (error) {
+        console.error("Unexpected error in getQuestionforStudent:", error);
+        return { success: false, message: "Unexpected error occurred", error };
+    }
+}
+
+
 
 
 // Export all functions
@@ -274,5 +384,6 @@ export {
     deleteStudent,
     loginStudent,
     getCourseMetadataByBatchId,
-    getCourseforStudents
+    getCourseforStudents,
+    getQuestionforStudent
 };
