@@ -3,6 +3,8 @@ import supabaseClient from "../supabase-client.js";
 import { getDatabase, ref, set, push, update, remove, get, child } from "firebase/database";
 // import app from "../firebase-config.js";
 import { initializeApp } from "firebase/app";
+import baseUrl from "../j0baseUrl.js";
+import compilerCache from "../compilerCache.js";
 
 
 
@@ -379,6 +381,116 @@ async function getQuestionforStudent(courseId, unitId, subUnitId, studentId, que
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+///Compilation Section
+
+
+// Helper: Encode to base64
+function encryptBase64(data) {
+    return Buffer.from(data, "utf-8").toString("base64");
+}
+
+// Helper: Decode from base64
+function decryptBase64(data) {
+    return Buffer.from(data, "base64").toString("utf-8");
+}
+
+// Helper: Sleep for polling
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Main compile and run function
+async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, courseId, unitId, subUnitId, questionId) {
+    try {
+        // 1. Get compiler code from cache or Firebase
+        const cacheKey = `${courseId}&${unitId}&${subUnitId}&${questionId}`;
+        let compilerCode = compilerCache[cacheKey];
+        if (!compilerCode) {
+
+            const compilerRef = ref(db, `EduCode/${courseId}/units/${unitId}/sub-units/${subUnitId}/coding/${questionId}/compiler-code/code`);
+            const snapshot = await get(compilerRef);
+            if (!snapshot.exists()) {
+                return { success: false, message: "Compiler code not found" };
+            }
+            compilerCode = snapshot.val();
+            compilerCache[cacheKey] = compilerCode;
+        }
+
+        // 2. Combine codes
+        const finalCode = `${compilerCode}\n${userWrittenCode}`;
+
+        // 3. Prepare batch submissions
+        const submissions = sampleInputOutput.map(([input]) => ({
+            source_code: encryptBase64(finalCode),
+            language_id: languageId,
+            stdin: encryptBase64(input)
+        }));
+
+        // 4. Submit batch to Judge0
+        const submitRes = await fetch(`${baseUrl}/submissions/batch?base64_encoded=true`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ submissions })
+        });
+        const submitJson = await submitRes.json();
+        const tokens = submitJson.tokens;
+        if (!tokens || !tokens.length) {
+            return { success: false, message: "No submission tokens returned" };
+        }
+
+        // 5. Poll for results
+        const results = await Promise.all(tokens.map(async token => {
+            let result;
+            while (true) {
+                const res = await fetch(`${baseUrl}/submissions/${token}?base64_encoded=true`);
+                result = await res.json();
+                if (result.status && result.status.id >= 3) break;
+                await sleep(1500);
+            }
+            // Decode base64 fields
+            if (result.stdout) result.stdout = decryptBase64(result.stdout);
+            if (result.stderr) result.stderr = decryptBase64(result.stderr);
+            if (result.compile_output) result.compile_output = decryptBase64(result.compile_output);
+            if (result.message) result.message = decryptBase64(result.message);
+            return result;
+        }));
+
+        return { success: true, results };
+    } catch (error) {
+        console.error("Error in compileAndRun:", error);
+        return { success: false, message: "Unexpected error occurred", error };
+    }
+}
+
+
+
+
+
+
 // Export all functions
 export {
     insertStudent,
@@ -391,5 +503,6 @@ export {
     loginStudent,
     getCourseMetadataByBatchId,
     getCourseforStudents,
-    getQuestionforStudent
+    getQuestionforStudent,
+    compileAndRun
 };

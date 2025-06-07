@@ -42,7 +42,8 @@ const {
     handleStudentLogin,
     handleGetCourseMetadataByBatchId,
     handleGetCourseforStudents,
-    handleGetQuestionforStudent
+    handleGetQuestionforStudent,
+    handleCompileAndRun
 } = require("./students/students-middle-controler.js");
 
 // Import controllers for courses
@@ -117,6 +118,7 @@ app.post("/students/login", handleStudentLogin); // Student login
 app.get("/students/course-metadata/batch/:batchId", handleGetCourseMetadataByBatchId); // Fetch course metadata by batch ID
 app.get("/students/course/:courseId", handleGetCourseforStudents); // Fetch a course by course ID for students
 app.post("/students/questions", handleGetQuestionforStudent); // Fetch questions for a student
+app.post("/students/compile-and-run", handleCompileAndRun); // Compile and run code
 
 // Routes for Courses
 // --------------------------------------------------------------------------------
