@@ -431,7 +431,7 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
         let compilerCode = compilerCache[cacheKey];
         if (!compilerCode) {
 
-            const compilerRef = ref(db, `EduCode/${courseId}/units/${unitId}/sub-units/${subUnitId}/coding/${questionId}/compiler-code/code`);
+            const compilerRef = ref(db, `EduCode/Courses/${courseId}/units/${unitId}/sub-units/${subUnitId}/coding/${questionId}/compiler-code/code`);
             const snapshot = await get(compilerRef);
             if (!snapshot.exists()) {
                 return { success: false, message: "Compiler code not found" };
