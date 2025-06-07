@@ -460,7 +460,7 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
         const submitJson = await submitRes.json();
         const tokens = submitJson.tokens;
         if (!tokens || !tokens.length) {
-            return { success: false, message: "No submission tokens returned" };
+            return { success: false, message: "No submission tokens returned", error: submitJson };
         }
 
         // 5. Poll for results
