@@ -458,7 +458,7 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
             body: JSON.stringify({ submissions })
         });
         const submitJson = await submitRes.json();
-        const tokens = submitJson.tokens;
+        const tokens = submitJson.map(obj => obj.token);
         if (!tokens || !tokens.length) {
             return { success: false, message: "No submission tokens returned", error: submitJson };
         }
