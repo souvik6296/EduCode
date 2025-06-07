@@ -441,7 +441,8 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
         }
 
         // 2. Combine codes
-        const finalCode = `${compilerCode}\n${userWrittenCode}`;
+        // const finalCode = `${compilerCode}\n${userWrittenCode}`;
+        const finalCode = `${compilerCode}`;
 
         // 3. Prepare batch submissions
         const submissions = sampleInputOutput.map(([input]) => ({
