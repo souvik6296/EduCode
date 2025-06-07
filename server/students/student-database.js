@@ -430,7 +430,6 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
         const cacheKey = `${courseId}&${unitId}&${subUnitId}&${questionId}`;
         let compilerCode = compilerCache[cacheKey];
         if (!compilerCode) {
-
             const compilerRef = ref(db, `EduCode/Courses/${courseId}/units/${unitId}/sub-units/${subUnitId}/coding/${questionId}/compiler-code/code`);
             const snapshot = await get(compilerRef);
             if (!snapshot.exists()) {
@@ -441,7 +440,6 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
         }
 
         // 2. Combine codes
-        // const finalCode = `${compilerCode}\n${userWrittenCode}`;
         const finalCode = `${userWrittenCode}`;
 
         // 3. Prepare batch submissions
@@ -480,7 +478,22 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
             return result;
         }));
 
-        return { success: true, results };
+        // 6. Format the response as requested
+        const formattedResults = sampleInputOutput.map(([input, expectedOutput], index) => {
+            const testCaseKey = `testCase${index + 1}`;
+            const result = results[index];
+            
+            return {
+                [testCaseKey]: {
+                    testCasePassed: result.stdout ? result.stdout.trim() === expectedOutput.trim() : false,
+                    expectedOutput: expectedOutput.trim(),
+                    userOutput: result.stdout ? result.stdout.trim() : "",
+                    compilerMessage: result.compile_output || result.stderr || result.message || null
+                }
+            };
+        });
+
+        return { success: true, results: formattedResults };
     } catch (error) {
         console.error("Error in compileAndRun:", error);
         return { success: false, message: "Unexpected error occurred", error };
