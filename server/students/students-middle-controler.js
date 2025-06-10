@@ -160,7 +160,7 @@ async function handleGetCourseMetadataByBatchId(req, res) {
 // Controller to handle fetching a course by course ID
 async function handleGetCourseforStudents(req, res) {
     try {
-        const { courseId, studentId } = req.params; // Expecting courseId and studentId as URL parameters
+        const { courseId, studentId } = req.body; // Expecting courseId and studentId as URL parameters
         const result = await getCourseforStudents(courseId, studentId);
         if (result.success) {
             res.status(200).json(result);
