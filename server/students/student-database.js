@@ -481,6 +481,7 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
 
         if (submissionError) {
             console.error('Error saving submission:', submissionError);
+            return { success: false, message: "Cannot save last submission", error: submissionError, data: submissionData };
             // Don't fail the whole operation, just log the error
         }
 
