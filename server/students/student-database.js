@@ -315,18 +315,18 @@ async function getQuestionforStudent(courseId, unitId, subUnitId, studentId, que
             const selected = await Promise.all(resumeData.resumed_coding_question_ids.map(async (id) => {
                 const q = coding[id];
                 if (!q) return null;
-                
+
                 // Get last submission for this question
                 const lastSubmission = await getLastSubmission(id);
-                
+
                 const { ["compiler-code"]: _, ["hidden-test-cases"]: __, ...rest } = q;
-                return { 
-                    id, 
+                return {
+                    id,
                     ...rest,
                     lastSubmission: lastSubmission || null
                 };
             }));
-            
+
             questionsToReturn.codingQuestions = selected.filter(Boolean);
             return {
                 success: true,
@@ -464,6 +464,26 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
         // 2. Combine codes
         const finalCode = `${userWrittenCode}`;
 
+        const { data: submissionData, error: submissionError } = await supabaseClient
+            .from('student_submission')
+            .upsert({
+                student_id: studentId,
+                course_id: courseId,
+                unit_id: unitId,
+                sub_unit_id: subUnitId,
+                question_id: questionId,
+                code: userWrittenCode, // Store the actual code
+                status: "resumed",
+                last_submission: new Date().toISOString()
+            }, {
+                onConflict: ['student_id', 'course_id', 'unit_id', 'sub_unit_id', 'question_id']
+            });
+
+        if (submissionError) {
+            console.error('Error saving submission:', submissionError);
+            // Don't fail the whole operation, just log the error
+        }
+
         // 3. Prepare batch submissions
         const submissions = sampleInputOutput.map(([input]) => ({
             source_code: encryptBase64(finalCode),
@@ -504,7 +524,7 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
         const formattedResults = sampleInputOutput.map(([input, expectedOutput], index) => {
             const testCaseKey = `testCase${index + 1}`;
             const result = results[index];
-            
+
             return {
                 [testCaseKey]: {
                     testCasePassed: result.stdout ? result.stdout.trim() === expectedOutput.trim() : false,
@@ -516,39 +536,21 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
         });
 
         // 7. Determine overall submission status
-        const allTestsPassed = formattedResults.every(testCase => 
+        const allTestsPassed = formattedResults.every(testCase =>
             Object.values(testCase)[0].testCasePassed
         );
-        const hasErrors = formattedResults.some(testCase => 
+        const hasErrors = formattedResults.some(testCase =>
             Object.values(testCase)[0].compilerMessage
         );
 
-        const submissionStatus = allTestsPassed ? 'Accepted' : 
-                              hasErrors ? 'Error' : 'Rejected';
+        const submissionStatus = allTestsPassed ? 'Accepted' :
+            hasErrors ? 'Error' : 'Rejected';
 
         // 8. Save submission to database
-        const { data: submissionData, error: submissionError } = await supabaseClient
-            .from('student_submission')
-            .upsert({
-                student_id: studentId,
-                course_id: courseId,
-                unit_id: unitId,
-                sub_unit_id: subUnitId,
-                question_id: questionId,
-                code: userWrittenCode, // Store the actual code
-                status: submissionStatus,
-                last_submission: new Date().toISOString()
-            }, {
-                onConflict: ['student_id', 'course_id', 'unit_id', 'sub_unit_id', 'question_id']
-            });
 
-        if (submissionError) {
-            console.error('Error saving submission:', submissionError);
-            // Don't fail the whole operation, just log the error
-        }
 
-        return { 
-            success: true, 
+        return {
+            success: true,
             results: formattedResults,
             submissionStatus: submissionStatus,
             submissionId: submissionData?.[0]?.submission_id || null
