@@ -446,8 +446,7 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Main compile and run function
-async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, courseId, unitId, subUnitId, questionId) {
+async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, courseId, unitId, subUnitId, questionId, studentId) {
     try {
         // 1. Get compiler code from cache or Firebase
         const cacheKey = `${courseId}&${unitId}&${subUnitId}&${questionId}`;
@@ -516,7 +515,44 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
             };
         });
 
-        return { success: true, results: formattedResults };
+        // 7. Determine overall submission status
+        const allTestsPassed = formattedResults.every(testCase => 
+            Object.values(testCase)[0].testCasePassed
+        );
+        const hasErrors = formattedResults.some(testCase => 
+            Object.values(testCase)[0].compilerMessage
+        );
+
+        const submissionStatus = allTestsPassed ? 'Accepted' : 
+                              hasErrors ? 'Error' : 'Rejected';
+
+        // 8. Save submission to database
+        const { data: submissionData, error: submissionError } = await supabaseClient
+            .from('student_submission')
+            .upsert({
+                student_id: studentId,
+                course_id: courseId,
+                unit_id: unitId,
+                sub_unit_id: subUnitId,
+                question_id: questionId,
+                code: userWrittenCode, // Store the actual code
+                status: submissionStatus,
+                last_submission: new Date().toISOString()
+            }, {
+                onConflict: ['student_id', 'course_id', 'unit_id', 'sub_unit_id', 'question_id']
+            });
+
+        if (submissionError) {
+            console.error('Error saving submission:', submissionError);
+            // Don't fail the whole operation, just log the error
+        }
+
+        return { 
+            success: true, 
+            results: formattedResults,
+            submissionStatus: submissionStatus,
+            submissionId: submissionData?.[0]?.submission_id || null
+        };
     } catch (error) {
         console.error("Error in compileAndRun:", error);
         return { success: false, message: "Unexpected error occurred", error };
