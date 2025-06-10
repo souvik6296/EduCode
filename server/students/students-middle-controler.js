@@ -204,18 +204,18 @@ async function handleGetQuestionforStudent(req, res) {
 // Controller to handle compiling and running code
 async function handleCompileAndRun(req, res) {
     try {
-        const { userWrittenCode, languageId, sampleInputOutput, courseId, unitId, subUnitId, questionId } = req.body;
+        const { userWrittenCode, languageId, sampleInputOutput, courseId, unitId, subUnitId, questionId, studentId } = req.body;
 
         // Validate required parameters
-        if (!userWrittenCode || !languageId || !sampleInputOutput || !courseId || !unitId || !subUnitId || !questionId) {
+        if (!userWrittenCode || !languageId || !sampleInputOutput || !courseId || !unitId || !subUnitId || !questionId || !studentId) {
             return res.status(400).json({
                 success: false,
-                message: "Missing required parameters: userWrittenCode, languageId, sampleInputOutput, courseId, unitId, subUnitId, or questionId"
+                message: "Missing required parameters: userWrittenCode, languageId, sampleInputOutput, courseId, unitId, subUnitId, questionId, or studentId"
             });
         }
 
         // Call the compileAndRun function
-        const result = await compileAndRun(userWrittenCode, languageId, sampleInputOutput, courseId, unitId, subUnitId, questionId);
+        const result = await compileAndRun(userWrittenCode, languageId, sampleInputOutput, courseId, unitId, subUnitId, questionId, studentId);
 
         if (result.success) {
             res.status(200).json(result);
