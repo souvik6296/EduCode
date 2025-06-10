@@ -477,7 +477,8 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
                 last_submission: new Date().toISOString()
             }, {
                 onConflict: ['student_id', 'course_id', 'unit_id', 'sub_unit_id', 'question_id']
-            });
+            })
+            .select('submission_id');
 
         if (submissionError) {
             console.error('Error saving submission:', submissionError);
@@ -554,7 +555,7 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
             success: true,
             results: formattedResults,
             submissionStatus: submissionStatus,
-            submissionId: submissionData?.[0]?.submission_id || null
+            submissionId: submissionData
         };
     } catch (error) {
         console.error("Error in compileAndRun:", error);
