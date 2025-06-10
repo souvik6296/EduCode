@@ -294,7 +294,7 @@ async function getQuestionforStudent(courseId, unitId, subUnitId, studentId, que
         const getLastSubmission = async (questionId) => {
             const { data: submissionData, error: submissionError } = await supabaseClient
                 .from("student_submission")
-                .select("submission_id, last_submission, status")
+                .select("submission_id, last_submission, status, last_submitted_code")
                 .eq("student_id", studentId)
                 .eq("course_id", courseId)
                 .eq("unit_id", unitId)
@@ -472,7 +472,7 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
                 unit_id: unitId,
                 sub_unit_id: subUnitId,
                 question_id: questionId,
-                code: userWrittenCode, // Store the actual code
+                last_submitted_code: userWrittenCode, // Store the actual code
                 status: "resumed",
                 last_submission: new Date().toISOString()
             }, {
