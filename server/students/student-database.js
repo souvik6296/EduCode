@@ -226,8 +226,8 @@ async function getCourseMetadataByBatchId(batchId) {
 
 
 
-// Function to get a course by course ID without mcq or coding sections
-async function getCourseforStudents(courseId) {
+// Function to get a course by course ID with student progress details
+async function getCourseforStudents(courseId, studentId) {
     try {
         const courseRef = ref(db, `EduCode/Courses/${courseId}`);
         const snapshot = await get(courseRef);
@@ -251,6 +251,25 @@ async function getCourseforStudents(courseId) {
                     // Remove 'mcq' and 'coding' keys if they exist
                     delete subUnit.mcq;
                     delete subUnit.coding;
+
+                    // Fetch progress details from the resumes table
+                    const { data: resumeData, error: resumeError } = await supabaseClient
+                        .from("resumes")
+                        .select("subunit_coding_status, subunit_mcq_status")
+                        .eq("student_id", studentId)
+                        .eq("course_id", courseId)
+                        .eq("unit_id", unitId)
+                        .eq("sub_unit_id", subUnitId)
+                        .single();
+
+                    if (resumeError) {
+                        console.error(`Error fetching resume data for sub-unit ${subUnitId}:`, resumeError);
+                        subUnit.codingStatus = "not_started";
+                        subUnit.mcqStatus = "not_started";
+                    } else {
+                        subUnit.codingStatus = resumeData?.subunit_coding_status || "not_started";
+                        subUnit.mcqStatus = resumeData?.subunit_mcq_status || "not_started";
+                    }
                 }
             }
         }
@@ -269,7 +288,7 @@ async function getQuestionforStudent(courseId, unitId, subUnitId, studentId, que
         // Step 1: Check the resumes table for resumed questions
         const { data: resumeData, error: resumeError } = await supabaseClient
             .from("resumes")
-            .select("resumed_coding_question_ids, resumed_mcq_question_ids")
+            .select("resumed_coding_question_ids, resumed_mcq_question_ids, subunit_coding_status, subunit_mcq_status")
             .eq("student_id", studentId)
             .eq("course_id", courseId)
             .eq("unit_id", unitId)
@@ -382,7 +401,9 @@ async function getQuestionforStudent(courseId, unitId, subUnitId, studentId, que
             unit_id: unitId,
             sub_unit_id: subUnitId,
             resumed_coding_question_ids: codingIds || [],
-            resumed_mcq_question_ids: mcqIds || []
+            resumed_mcq_question_ids: mcqIds || [],
+            subunit_coding_status: questionType === "Coding" ? "resumed" : resumeData?.subunit_coding_status || "not_started",
+            subunit_mcq_status: questionType === "MCQ" ? "resumed" : resumeData?.subunit_mcq_status || "not_started"
         };
 
         const { error: saveResumeError } = await supabaseClient.from("resumes").upsert(resumePayload);
