@@ -555,7 +555,7 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
             success: true,
             results: formattedResults,
             submissionStatus: submissionStatus,
-            submissionId: submissionData
+            submissionId: submissionData?.[0]?.submission_id || null
         };
     } catch (error) {
         console.error("Error in compileAndRun:", error);
