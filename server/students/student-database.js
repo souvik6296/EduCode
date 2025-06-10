@@ -262,7 +262,6 @@ async function getCourseforStudents(courseId) {
     }
 }
 
-
 async function getQuestionforStudent(courseId, unitId, subUnitId, studentId, questionType) {
     try {
         const unitPath = `EduCode/Courses/${courseId}/units/${unitId}/sub-units/${subUnitId}`;
@@ -291,17 +290,44 @@ async function getQuestionforStudent(courseId, unitId, subUnitId, studentId, que
 
         let questionsToReturn = {};
 
-        // Step 3: If resumed data exists, return those specific questions
+        // Helper function to get last submitted code for a question
+        const getLastSubmission = async (questionId) => {
+            const { data: submissionData, error: submissionError } = await supabaseClient
+                .from("student_submission")
+                .select("submission_id, last_submission, status")
+                .eq("student_id", studentId)
+                .eq("course_id", courseId)
+                .eq("unit_id", unitId)
+                .eq("sub_unit_id", subUnitId)
+                .eq("question_id", questionId)
+                .order("last_submission", { ascending: false })
+                .limit(1);
 
+            if (submissionError || !submissionData || submissionData.length === 0) {
+                return null;
+            }
+            return submissionData[0];
+        };
+
+        // Step 3: If resumed data exists, return those specific questions with last submission
         if (resumeData && questionType === "Coding" && resumeData.resumed_coding_question_ids?.length > 0) {
             const coding = subUnitData.coding || {};
-            const selected = resumeData.resumed_coding_question_ids.map(id => {
+            const selected = await Promise.all(resumeData.resumed_coding_question_ids.map(async (id) => {
                 const q = coding[id];
                 if (!q) return null;
+                
+                // Get last submission for this question
+                const lastSubmission = await getLastSubmission(id);
+                
                 const { ["compiler-code"]: _, ["hidden-test-cases"]: __, ...rest } = q;
-                return { id, ...rest };
-            }).filter(Boolean);
-            questionsToReturn.codingQuestions = selected;
+                return { 
+                    id, 
+                    ...rest,
+                    lastSubmission: lastSubmission || null
+                };
+            }));
+            
+            questionsToReturn.codingQuestions = selected.filter(Boolean);
             return {
                 success: true,
                 message: "Resumed questions fetched successfully",
@@ -320,9 +346,6 @@ async function getQuestionforStudent(courseId, unitId, subUnitId, studentId, que
             };
         }
 
-
-
-
         // Step 4: If no resumed data, pick fresh questions
         if (questionType === "Coding") {
             const codingQuestions = subUnitData.coding || {};
@@ -331,12 +354,13 @@ async function getQuestionforStudent(courseId, unitId, subUnitId, studentId, que
             const codingArray = Object.entries(codingQuestions).map(([id, q]) => ({ id, ...q }));
             const selected = codingArray.sort(() => Math.random() - 0.5).slice(0, questionToBeShown);
 
-            // Remove compiler-code & hidden-test-cases
-            const cleanSelected = selected.map(({ ["compiler-code"]: _, ["hidden-test-cases"]: __, ...rest }) => rest);
+            // Remove compiler-code & hidden-test-cases and add empty lastSubmission
+            const cleanSelected = selected.map(({ ["compiler-code"]: _, ["hidden-test-cases"]: __, ...rest }) => ({
+                ...rest,
+                lastSubmission: null
+            }));
 
             questionsToReturn.codingQuestions = cleanSelected;
-
-            // Save only question IDs
             var codingIds = selected.map(q => q.id);
         }
 
@@ -377,7 +401,6 @@ async function getQuestionforStudent(courseId, unitId, subUnitId, studentId, que
         return { success: false, message: "Unexpected error occurred", error };
     }
 }
-
 
 
 
