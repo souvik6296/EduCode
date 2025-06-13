@@ -585,6 +585,128 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
 }
 
 
+async function submitandcompile(userWrittenCode, languageId, courseId, unitId, subUnitId, questionId, studentId) {
+    try {
+        // 1. Get compiler code and hidden test cases from Firebase
+        const cacheKey = `${courseId}&${unitId}&${subUnitId}&${questionId}`;
+        let hiddenTestCases = hiddenTestCasesCache[cacheKey];
+        
+        if (!hiddenTestCases) {
+            const testCasesRef = ref(db, `EduCode/Courses/${courseId}/units/${unitId}/sub-units/${subUnitId}/coding/${questionId}/hidden-test-cases`);
+            const snapshot = await get(testCasesRef);
+            if (!snapshot.exists() || !snapshot.val().length) {
+                return { success: false, message: "Hidden test cases not found" };
+            }
+            hiddenTestCases = snapshot.val();
+            hiddenTestCasesCache[cacheKey] = hiddenTestCases;
+        }
+
+        // Convert hidden test cases to the format expected by the rest of the function
+        const testCases = hiddenTestCases.map(testCase => [testCase.input, testCase.output]);
+
+        // 2. Combine codes (using only user's code since we're submitting)
+        const finalCode = `${userWrittenCode}`;
+
+        // 3. Save submission status as "submitted" (not "resumed")
+        const { data: submissionData, error: submissionError } = await supabaseClient
+            .from('student_submission')
+            .upsert({
+                student_id: studentId,
+                course_id: courseId,
+                unit_id: unitId,
+                sub_unit_id: subUnitId,
+                question_id: questionId,
+                last_submitted_code: userWrittenCode,
+                status: "submitted", // Changed from "resumed" to "submitted"
+                last_submission: new Date().toISOString()
+            }, {
+                onConflict: ['student_id', 'course_id', 'unit_id', 'sub_unit_id', 'question_id']
+            })
+            .select('submission_id');
+
+        if (submissionError) {
+            console.error('Error saving submission:', submissionError);
+            return { success: false, message: "Cannot save submission", error: submissionError };
+        }
+
+        // 4. Prepare batch submissions for hidden test cases
+        const submissions = testCases.map(([input]) => ({
+            source_code: encryptBase64(finalCode),
+            language_id: languageId,
+            stdin: encryptBase64(input)
+        }));
+
+        // 5. Submit batch to Judge0
+        const submitRes = await fetch(`${baseUrl}/submissions/batch?base64_encoded=true`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ submissions })
+        });
+        const submitJson = await submitRes.json();
+        const tokens = submitJson.map(obj => obj.token);
+        if (!tokens || !tokens.length) {
+            return { success: false, message: "No submission tokens returned", error: submitJson };
+        }
+
+        // 6. Poll for results
+        const results = await Promise.all(tokens.map(async token => {
+            let result;
+            while (true) {
+                const res = await fetch(`${baseUrl}/submissions/${token}?base64_encoded=true`);
+                result = await res.json();
+                if (result.status && result.status.id >= 3) break;
+                await sleep(1500);
+            }
+            // Decode base64 fields
+            if (result.stdout) result.stdout = decryptBase64(result.stdout);
+            if (result.stderr) result.stderr = decryptBase64(result.stderr);
+            if (result.compile_output) result.compile_output = decryptBase64(result.compile_output);
+            if (result.message) result.message = decryptBase64(result.message);
+            return result;
+        }));
+
+        // 7. Format the response and count passed test cases
+        let passedCount = 0;
+        const formattedResults = testCases.map(([input, expectedOutput], index) => {
+            const testCaseKey = `hiddenTestCase${index + 1}`;
+            const result = results[index];
+            const isPassed = result.stdout ? result.stdout.trim() === expectedOutput.trim() : false;
+            
+            if (isPassed) passedCount++;
+
+            return {
+                [testCaseKey]: {
+                    testCasePassed: isPassed,
+                    expectedOutput: expectedOutput.trim(),
+                    userOutput: result.stdout ? result.stdout.trim() : "",
+                    compilerMessage: result.compile_output || result.stderr || result.message || null
+                }
+            };
+        });
+
+        // 8. Determine overall submission status
+        const allTestsPassed = passedCount === testCases.length;
+        const hasErrors = formattedResults.some(testCase =>
+            Object.values(testCase)[0].compilerMessage
+        );
+
+        const submissionStatus = allTestsPassed ? 'Accepted' :
+            hasErrors ? 'Error' : 'Rejected';
+
+        return {
+            success: true,
+            results: formattedResults,
+            submissionStatus: submissionStatus,
+            passedCount: passedCount,
+            totalCount: testCases.length,
+            submissionId: submissionData?.[0]?.submission_id || null
+        };
+    } catch (error) {
+        console.error("Error in submitandcompile:", error);
+        return { success: false, message: "Unexpected error occurred", error };
+    }
+}
+
 
 
 
@@ -602,5 +724,6 @@ export {
     getCourseMetadataByBatchId,
     getCourseforStudents,
     getQuestionforStudent,
-    compileAndRun
+    compileAndRun,
+    submitandcompile
 };

@@ -10,7 +10,8 @@ import {
     getCourseMetadataByBatchId,
     getCourseforStudents,
     getQuestionforStudent,
-    compileAndRun
+    compileAndRun,
+    submitandcompile
 } from "./student-database.js";
 
 // Controller to handle inserting a new student
@@ -228,6 +229,33 @@ async function handleCompileAndRun(req, res) {
     }
 }
 
+// Controller to handle submitting and compiling code
+async function handleSubmitAndCompile(req, res) {
+    try {
+        const { userWrittenCode, languageId, courseId, unitId, subUnitId, questionId, studentId } = req.body;
+
+        // Validate required parameters
+        if (!userWrittenCode || !languageId || !courseId || !unitId || !subUnitId || !questionId || !studentId) {
+            return res.status(400).json({
+                success: false,
+                message: "Missing required parameters: userWrittenCode, languageId, courseId, unitId, subUnitId, questionId, or studentId"
+            });
+        }
+
+        // Call the submitandcompile function
+        const result = await submitandcompile(userWrittenCode, languageId, courseId, unitId, subUnitId, questionId, studentId);
+
+        if (result.success) {
+            res.status(200).json(result);
+        } else {
+            res.status(400).json(result); // Return 400 for errors during submission or compilation
+        }
+    } catch (error) {
+        console.error("Error in handleSubmitAndCompile:", error);
+        res.status(500).json({ success: false, message: "Unexpected error occurred", error });
+    }
+}
+
 // Export all controllers
 export {
     handleInsertStudent,
@@ -241,5 +269,6 @@ export {
     handleStudentLogin,
     handleGetCourseforStudents,
     handleGetQuestionforStudent,
-    handleCompileAndRun
+    handleCompileAndRun,
+    handleSubmitAndCompile
 };
