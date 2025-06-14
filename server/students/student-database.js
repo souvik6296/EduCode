@@ -5,6 +5,7 @@ import { getDatabase, ref, set, push, update, remove, get, child } from "firebas
 import { initializeApp } from "firebase/app";
 import baseUrl from "../j0baseUrl.js";
 import compilerCache from "../compilerCache.js";
+import hiddenTestCasesCache from "../hiddenTestCasesCache.js";
 
 
 
@@ -469,7 +470,7 @@ function sleep(ms) {
 
 async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, courseId, unitId, subUnitId, questionId, studentId) {
     try {
-        // 1. Get compiler code from cache or Firebase
+        // 1. Get compiler code (preset correct solution) from cache or Firebase
         const cacheKey = `${courseId}&${unitId}&${subUnitId}&${questionId}`;
         let compilerCode = compilerCache[cacheKey];
         if (!compilerCode) {
@@ -482,9 +483,7 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
             compilerCache[cacheKey] = compilerCode;
         }
 
-        // 2. Combine codes
-        const finalCode = `${userWrittenCode}`;
-
+        // 2. Save user's submission (optional, can be kept as before)
         const { data: submissionData, error: submissionError } = await supabaseClient
             .from('student_submission')
             .upsert({
@@ -493,7 +492,7 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
                 unit_id: unitId,
                 sub_unit_id: subUnitId,
                 question_id: questionId,
-                last_submitted_code: userWrittenCode, // Store the actual code
+                last_submitted_code: userWrittenCode,
                 status: "resumed",
                 last_submission: new Date().toISOString()
             }, {
@@ -503,18 +502,26 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
 
         if (submissionError) {
             console.error('Error saving submission:', submissionError);
-            return { success: false, message: "Cannot save last submission", error: submissionError, data: submissionData };
-            // Don't fail the whole operation, just log the error
+            return { success: false, message: "Cannot save last submission", error: submissionError };
         }
 
-        // 3. Prepare batch submissions
-        const submissions = sampleInputOutput.map(([input]) => ({
-            source_code: encryptBase64(finalCode),
-            language_id: languageId,
-            stdin: encryptBase64(input)
-        }));
+        // 3. Prepare submissions (for BOTH compiler code and user code)
+        const submissions = sampleInputOutput.flatMap(([input]) => [
+            // Submission for COMPILER CODE (correct solution)
+            {
+                source_code: encryptBase64(compilerCode),
+                language_id: languageId,
+                stdin: encryptBase64(input)
+            },
+            // Submission for USER CODE
+            {
+                source_code: encryptBase64(userWrittenCode),
+                language_id: languageId,
+                stdin: encryptBase64(input)
+            }
+        ]);
 
-        // 4. Submit batch to Judge0
+        // 4. Submit BOTH codes to Judge0 in a single batch
         const submitRes = await fetch(`${baseUrl}/submissions/batch?base64_encoded=true`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -526,7 +533,7 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
             return { success: false, message: "No submission tokens returned", error: submitJson };
         }
 
-        // 5. Poll for results
+        // 5. Poll for ALL results (both compiler and user code runs)
         const results = await Promise.all(tokens.map(async token => {
             let result;
             while (true) {
@@ -543,18 +550,21 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
             return result;
         }));
 
-        // 6. Format the response as requested
+        // 6. Compare compiler output (expected) vs user output (actual)
         const formattedResults = sampleInputOutput.map(([input, expectedOutput], index) => {
-            const testCaseKey = `testCase${index + 1}`;
-            const result = results[index];
+            const compilerResult = results[index * 2];     // Even indices: Compiler code runs
+            const userResult = results[index * 2 + 1];    // Odd indices: User code runs
+
+            const testCasePassed = 
+                userResult.stdout?.trim() === compilerResult.stdout?.trim();
 
             return {
-                [testCaseKey]: {
+                [`testCase${index + 1}`]: {
                     input: input.trim(),
-                    testCasePassed: result.stdout ? result.stdout.trim() === expectedOutput.trim() : false,
-                    expectedOutput: expectedOutput.trim(),
-                    userOutput: result.stdout ? result.stdout.trim() : "",
-                    compilerMessage: result.compile_output || result.stderr || result.message || null
+                    testCasePassed,
+                    expectedOutput: compilerResult.stdout?.trim() || "",
+                    userOutput: userResult.stdout?.trim() || "",
+                    compilerMessage: userResult.compile_output || userResult.stderr || userResult.message || null
                 }
             };
         });
@@ -570,13 +580,10 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
         const submissionStatus = allTestsPassed ? 'Accepted' :
             hasErrors ? 'Error' : 'Rejected';
 
-        // 8. Save submission to database
-
-
         return {
             success: true,
             results: formattedResults,
-            submissionStatus: submissionStatus,
+            submissionStatus,
             submissionId: submissionData?.[0]?.submission_id || null
         };
     } catch (error) {
@@ -588,27 +595,38 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
 
 async function submitandcompile(userWrittenCode, languageId, courseId, unitId, subUnitId, questionId, studentId) {
     try {
-        // 1. Get compiler code and hidden test cases from Firebase
+        // 1. Check cache for compiler code and hidden test cases
         const cacheKey = `${courseId}&${unitId}&${subUnitId}&${questionId}`;
-        let hiddenTestCases = hiddenTestCasesCache[cacheKey];
         
+        let compilerCode = compilerCache[cacheKey];
+        let hiddenTestCases = hiddenTestCasesCache[cacheKey];
+
+        // Fetch compiler code if not in cache
+        if (!compilerCode) {
+            const compilerRef = ref(db, `EduCode/Courses/${courseId}/units/${unitId}/sub-units/${subUnitId}/coding/${questionId}/compiler-code/code`);
+            const compilerSnapshot = await get(compilerRef);
+            if (!compilerSnapshot.exists()) {
+                return { success: false, message: "Compiler code not found" };
+            }
+            compilerCode = compilerSnapshot.val();
+            compilerCache[cacheKey] = compilerCode;
+        }
+
+        // Fetch hidden test cases if not in cache
         if (!hiddenTestCases) {
             const testCasesRef = ref(db, `EduCode/Courses/${courseId}/units/${unitId}/sub-units/${subUnitId}/coding/${questionId}/hidden-test-cases`);
-            const snapshot = await get(testCasesRef);
-            if (!snapshot.exists() || !snapshot.val().length) {
+            const testCasesSnapshot = await get(testCasesRef);
+            if (!testCasesSnapshot.exists() || !testCasesSnapshot.val().length) {
                 return { success: false, message: "Hidden test cases not found" };
             }
-            hiddenTestCases = snapshot.val();
+            hiddenTestCases = testCasesSnapshot.val();
             hiddenTestCasesCache[cacheKey] = hiddenTestCases;
         }
 
-        // Convert hidden test cases to the format expected by the rest of the function
+        // Format test cases: [input, expectedOutput][]
         const testCases = hiddenTestCases.map(testCase => [testCase.input, testCase.output]);
 
-        // 2. Combine codes (using only user's code since we're submitting)
-        const finalCode = `${userWrittenCode}`;
-
-        // 3. Save submission status as "submitted" (not "resumed")
+        // 2. Save submission status as "submitted"
         const { data: submissionData, error: submissionError } = await supabaseClient
             .from('student_submission')
             .upsert({
@@ -618,7 +636,7 @@ async function submitandcompile(userWrittenCode, languageId, courseId, unitId, s
                 sub_unit_id: subUnitId,
                 question_id: questionId,
                 last_submitted_code: userWrittenCode,
-                status: "submitted", // Changed from "resumed" to "submitted"
+                status: "submitted",
                 last_submission: new Date().toISOString()
             }, {
                 onConflict: ['student_id', 'course_id', 'unit_id', 'sub_unit_id', 'question_id']
@@ -630,14 +648,23 @@ async function submitandcompile(userWrittenCode, languageId, courseId, unitId, s
             return { success: false, message: "Cannot save submission", error: submissionError };
         }
 
-        // 4. Prepare batch submissions for hidden test cases
-        const submissions = testCases.map(([input]) => ({
-            source_code: encryptBase64(finalCode),
-            language_id: languageId,
-            stdin: encryptBase64(input)
-        }));
+        // 3. Prepare submissions for BOTH compiler code and user code
+        const submissions = testCases.flatMap(([input]) => [
+            // Compiler code (correct solution)
+            {
+                source_code: encryptBase64(compilerCode),
+                language_id: languageId,
+                stdin: encryptBase64(input)
+            },
+            // User code
+            {
+                source_code: encryptBase64(userWrittenCode),
+                language_id: languageId,
+                stdin: encryptBase64(input)
+            }
+        ]);
 
-        // 5. Submit batch to Judge0
+        // 4. Submit batch to Judge0
         const submitRes = await fetch(`${baseUrl}/submissions/batch?base64_encoded=true`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -649,7 +676,7 @@ async function submitandcompile(userWrittenCode, languageId, courseId, unitId, s
             return { success: false, message: "No submission tokens returned", error: submitJson };
         }
 
-        // 6. Poll for results
+        // 5. Poll for results (both compiler and user code runs)
         const results = await Promise.all(tokens.map(async token => {
             let result;
             while (true) {
@@ -666,24 +693,24 @@ async function submitandcompile(userWrittenCode, languageId, courseId, unitId, s
             return result;
         }));
 
-        // 7. Format the response and count passed test cases
+        // 6. Compare compiler output (expected) vs user output (actual)
         let passedCount = 0;
-        const formattedResults = testCases.map(([input, expectedOutput], index) => {
-            const testCaseKey = `hiddenTestCase${index + 1}`;
-            const result = results[index];
-            const isPassed = result.stdout ? result.stdout.trim() === expectedOutput.trim() : false;
-            
+        const formattedResults = testCases.map(([input], index) => {
+            const compilerResult = results[index * 2];     // Compiler code result
+            const userResult = results[index * 2 + 1];    // User code result
+            const isPassed = userResult.stdout?.trim() === compilerResult.stdout?.trim();
+
             if (isPassed) passedCount++;
 
             return {
-                [testCaseKey]: {
+                [`hiddenTestCase${index + 1}`]: {
                     testCasePassed: isPassed,
-                    compilerMessage: result.compile_output || result.stderr || result.message || null
+                    compilerMessage: userResult.compile_output || userResult.stderr || userResult.message || null
                 }
             };
         });
 
-        // 8. Determine overall submission status
+        // 7. Determine submission status
         const allTestsPassed = passedCount === testCases.length;
         const hasErrors = formattedResults.some(testCase =>
             Object.values(testCase)[0].compilerMessage
@@ -695,8 +722,8 @@ async function submitandcompile(userWrittenCode, languageId, courseId, unitId, s
         return {
             success: true,
             results: formattedResults,
-            submissionStatus: submissionStatus,
-            passedCount: passedCount,
+            submissionStatus,
+            passedCount,
             totalCount: testCases.length,
             submissionId: submissionData?.[0]?.submission_id || null
         };
@@ -705,7 +732,6 @@ async function submitandcompile(userWrittenCode, languageId, courseId, unitId, s
         return { success: false, message: "Unexpected error occurred", error };
     }
 }
-
 
 
 
