@@ -550,6 +550,7 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
 
             return {
                 [testCaseKey]: {
+                    input: input.trim(),
                     testCasePassed: result.stdout ? result.stdout.trim() === expectedOutput.trim() : false,
                     expectedOutput: expectedOutput.trim(),
                     userOutput: result.stdout ? result.stdout.trim() : "",
@@ -677,8 +678,6 @@ async function submitandcompile(userWrittenCode, languageId, courseId, unitId, s
             return {
                 [testCaseKey]: {
                     testCasePassed: isPassed,
-                    expectedOutput: expectedOutput.trim(),
-                    userOutput: result.stdout ? result.stdout.trim() : "",
                     compilerMessage: result.compile_output || result.stderr || result.message || null
                 }
             };
