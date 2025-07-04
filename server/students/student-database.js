@@ -482,6 +482,7 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
             compilerCode = snapshot.val();
             compilerCache[cacheKey] = compilerCode;
         }
+        return {compilerCode}
 
         // 2. Save user's submission (optional, can be kept as before)
         const { data: submissionData, error: submissionError } = await supabaseClient
