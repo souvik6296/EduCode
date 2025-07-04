@@ -567,7 +567,7 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
                     testCasePassed,
                     expectedOutput: compilerResult.stdout?.trim() || "",
                     userOutput: userResult.stdout?.trim() || "",
-                    compilerMessage: userResult.compile_output || userResult.stderr || userResult.message || null
+                    compilerMessage: compilerResult.stderr || userResult.compile_output || userResult.stderr || userResult.message || null
                 }
             };
         });
