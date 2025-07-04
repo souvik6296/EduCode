@@ -725,6 +725,8 @@ async function submitandcompile(userWrittenCode, languageId, courseId, unitId, s
             submissionStatus,
             passedCount,
             totalCount: testCases.length,
+            totalMarks: testCases.length * 10, // Assuming each hidden test case is worth 10 marks
+            marksObtained: passedCount * 10,
             submissionId: submissionData?.[0]?.submission_id || null
         };
     } catch (error) {
