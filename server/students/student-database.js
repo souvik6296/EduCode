@@ -482,7 +482,7 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
             compilerCode = snapshot.val();
             compilerCache[cacheKey] = compilerCode;
         }
-        return {compilerCode}
+        // return {compilerCode}
 
         // 2. Save user's submission (optional, can be kept as before)
         const { data: submissionData, error: submissionError } = await supabaseClient
@@ -561,11 +561,12 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
 
             return {
                 [`testCase${index + 1}`]: {
-                    input: input.trim(),
-                    testCasePassed,
-                    expectedOutput: compilerResult.stdout?.trim() || "",
-                    userOutput: userResult.stdout?.trim() || "",
-                    compilerMessage: userResult.compile_output || userResult.stderr || userResult.message || null
+                    compilerResult
+                    // input: input.trim(),
+                    // testCasePassed,
+                    // expectedOutput: compilerResult.stdout?.trim() || "",
+                    // userOutput: userResult.stdout?.trim() || "",
+                    // compilerMessage: userResult.compile_output || userResult.stderr || userResult.message || null
                 }
             };
         });
