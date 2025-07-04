@@ -480,7 +480,7 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
             if (!snapshot.exists()) {
                 return { success: false, message: "Compiler code not found" };
             }
-            compilerCode = snapshot.val();
+            compilerCode = snapshot.val().trim();
             compilerCache[cacheKey] = compilerCode;
         }
         // return {compilerCode}
