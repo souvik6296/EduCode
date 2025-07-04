@@ -472,8 +472,8 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
     try {
         // 1. Get compiler code (preset correct solution) from cache or Firebase
         const cacheKey = `${courseId}&${unitId}&${subUnitId}&${questionId}`;
-        // let compilerCode = compilerCache[cacheKey];
-        let compilerCode;
+        let compilerCode = compilerCache[cacheKey];
+        // let compilerCode;
         if (!compilerCode) {
             const compilerRef = ref(db, `EduCode/Courses/${courseId}/units/${unitId}/sub-units/${subUnitId}/coding/${questionId}/compiler-code/code`);
             const snapshot = await get(compilerRef);
@@ -563,12 +563,12 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
             return {
                 [`testCase${index + 1}`]: {
                     
-                    compilerResult
-                    // input: input.trim(),
-                    // testCasePassed,
-                    // expectedOutput: compilerResult.stdout?.trim() || "",
-                    // userOutput: userResult.stdout?.trim() || "",
-                    // compilerMessage: compilerResult.stderr || userResult.compile_output || userResult.stderr || userResult.message || null
+                    // compilerResult
+                    input: input.trim(),
+                    testCasePassed,
+                    expectedOutput: compilerResult.stdout?.trim() || "",
+                    userOutput: userResult.stdout?.trim() || "",
+                    compilerMessage: compilerResult.stderr || userResult.compile_output || userResult.stderr || userResult.message || null
                 }
             };
         });
