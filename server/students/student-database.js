@@ -562,12 +562,13 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
 
             return {
                 [`testCase${index + 1}`]: {
-                    // compilerResult
-                    input: input.trim(),
-                    testCasePassed,
-                    expectedOutput: compilerResult.stdout?.trim() || "",
-                    userOutput: userResult.stdout?.trim() || "",
-                    compilerMessage: compilerResult.stderr || userResult.compile_output || userResult.stderr || userResult.message || null
+                    
+                    compilerResult
+                    // input: input.trim(),
+                    // testCasePassed,
+                    // expectedOutput: compilerResult.stdout?.trim() || "",
+                    // userOutput: userResult.stdout?.trim() || "",
+                    // compilerMessage: compilerResult.stderr || userResult.compile_output || userResult.stderr || userResult.message || null
                 }
             };
         });
