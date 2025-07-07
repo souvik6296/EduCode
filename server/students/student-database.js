@@ -749,8 +749,8 @@ async function submitTest(details) {
         unit_id,
         sub_unit_id,
         result_type, // 'coding' or 'mcq'
-        score,
-        total,
+        score : marks_obtained, // Marks obtained by the student
+        total: total_marks, // Total marks for the test
         submitted_at // should be ISO string
     } = details;
     try {
@@ -764,8 +764,8 @@ async function submitTest(details) {
                 unit_id,
                 sub_unit_id,
                 result_type,
-                score,
-                total,
+                marks_obtained,
+                total_marks,
                 submitted_at
             }]);
         if (resultError) {
