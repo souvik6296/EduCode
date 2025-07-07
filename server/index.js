@@ -44,7 +44,8 @@ const {
     handleGetCourseforStudents,
     handleGetQuestionforStudent,
     handleCompileAndRun,
-    handleSubmitAndCompile
+    handleSubmitAndCompile,
+    handleSubmitTest
 } = require("./students/students-middle-controler.js");
 
 // Import controllers for courses
@@ -121,6 +122,7 @@ app.post("/students/course", handleGetCourseforStudents); // Fetch a course by c
 app.post("/students/questions", handleGetQuestionforStudent); // Fetch questions for a student
 app.post("/students/compile-and-run", handleCompileAndRun); // Compile and run code
 app.post("/students/submit-and-compile", handleSubmitAndCompile); // Submit and compile code
+app.post("/students/submit-test", handleSubmitTest); // Submit test and update resume
 
 // Routes for Courses
 // --------------------------------------------------------------------------------

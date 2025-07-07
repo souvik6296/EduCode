@@ -1,4 +1,3 @@
-
 import supabaseClient from "../supabase-client.js";
 import { getDatabase, ref, set, push, update, remove, get, child } from "firebase/database";
 // import app from "../firebase-config.js";
@@ -182,8 +181,6 @@ async function loginStudent(userId, password) {
     }
 }
 
-
-// ...existing code...
 
 // Function to get course metadata for a given batch
 async function getCourseMetadataByBatchId(batchId) {
@@ -739,8 +736,69 @@ async function submitandcompile(userWrittenCode, languageId, courseId, unitId, s
     }
 }
 
-
-
+/**
+ * Submit test results and update resume status for coding questions
+ * @param {Object} details - All required details for results and resume update
+ * @returns {Promise<Object>} - Success or error object
+ */
+async function submitTest(details) {
+    const {
+        university_id,
+        student_id,
+        course_id,
+        unit_id,
+        sub_unit_id,
+        result_type, // 'coding' or 'mcq'
+        score,
+        total,
+        submitted_at // should be ISO string
+    } = details;
+    try {
+        // 1. Insert into results table
+        const { data: resultData, error: resultError } = await supabaseClient
+            .from("results")
+            .insert([{
+                university_id,
+                student_id,
+                course_id,
+                unit_id,
+                sub_unit_id,
+                result_type,
+                score,
+                total,
+                submitted_at
+            }]);
+        if (resultError) {
+            return { success: false, message: "Failed to insert result", error: resultError };
+        }
+        // 2. Update resumes table based on result_type
+        let updateFields = {};
+        if (result_type === "coding") {
+            updateFields = {
+                resumed_coding_question_ids: [],
+                subunit_coding_status: "completed"
+            };
+        } else if (result_type === "mcq") {
+            updateFields = {
+                resumed_mcq_question_ids: [],
+                subunit_mcq_status: "completed"
+            };
+        }
+        const { error: resumeError } = await supabaseClient
+            .from("resumes")
+            .update(updateFields)
+            .eq("student_id", student_id)
+            .eq("course_id", course_id)
+            .eq("unit_id", unit_id)
+            .eq("sub_unit_id", sub_unit_id);
+        if (resumeError) {
+            return { success: false, message: "Failed to update resume", error: resumeError };
+        }
+        return { success: true, message: "Test submitted and resume updated successfully", data: resultData };
+    } catch (err) {
+        return { success: false, message: "Unexpected error occurred", error: err };
+    }
+}
 
 // Export all functions
 export {
@@ -756,5 +814,6 @@ export {
     getCourseforStudents,
     getQuestionforStudent,
     compileAndRun,
-    submitandcompile
+    submitandcompile,
+    submitTest
 };

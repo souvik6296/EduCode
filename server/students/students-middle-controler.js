@@ -11,7 +11,8 @@ import {
     getCourseforStudents,
     getQuestionforStudent,
     compileAndRun,
-    submitandcompile
+    submitandcompile,
+    submitTest
 } from "./student-database.js";
 
 // Controller to handle inserting a new student
@@ -256,6 +257,30 @@ async function handleSubmitAndCompile(req, res) {
     }
 }
 
+// Controller to handle submitting test and updating resume
+async function handleSubmitTest(req, res) {
+    try {
+        const details = req.body;
+        // Validate required fields
+        const requiredFields = [
+            "university_id", "student_id", "course_id", "unit_id", "sub_unit_id", "result_type", "score", "total", "submitted_at"
+        ];
+        for (const field of requiredFields) {
+            if (!details[field]) {
+                return res.status(400).json({ success: false, message: `Missing required field: ${field}` });
+            }
+        }
+        const result = await submitTest(details);
+        if (result.success) {
+            res.status(200).json(result);
+        } else {
+            res.status(400).json(result);
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Unexpected error occurred", error });
+    }
+}
+
 // Export all controllers
 export {
     handleInsertStudent,
@@ -270,5 +295,6 @@ export {
     handleGetCourseforStudents,
     handleGetQuestionforStudent,
     handleCompileAndRun,
-    handleSubmitAndCompile
+    handleSubmitAndCompile,
+    handleSubmitTest
 };
