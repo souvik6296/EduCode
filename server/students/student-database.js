@@ -800,6 +800,49 @@ async function submitTest(details) {
     }
 }
 
+/**
+ * Get student profile by student_id
+ * @param {string} studentId
+ * @returns {Promise<Object>} - Profile fields or error
+ */
+async function getStudentProfile(studentId) {
+    try {
+        const { data, error } = await supabaseClient
+            .from("students")
+            .select("student_name, password, profile_image_link, user_id, phone_num, uni_reg_id, section, email_id")
+            .eq("student_id", studentId)
+            .single();
+        if (error) {
+            return { success: false, message: "Failed to fetch student profile", error };
+        }
+        return { success: true, data };
+    } catch (err) {
+        return { success: false, message: "Unexpected error occurred", error: err };
+    }
+}
+
+/**
+ * Update any number of fields for a student by student_id
+ * @param {string} studentId
+ * @param {Object} fieldsToUpdate
+ * @returns {Promise<Object>} - Success or error object
+ */
+async function updateStudentFields(studentId, fieldsToUpdate) {
+    try {
+        const { data, error } = await supabaseClient
+            .from("students")
+            .update(fieldsToUpdate)
+            .eq("student_id", studentId)
+            .select();
+        if (error) {
+            return { success: false, message: "Failed to update student fields", error };
+        }
+        return { success: true, message: "Student fields updated successfully", data };
+    } catch (err) {
+        return { success: false, message: "Unexpected error occurred", error: err };
+    }
+}
+
 // Export all functions
 export {
     insertStudent,
@@ -815,5 +858,7 @@ export {
     getQuestionforStudent,
     compileAndRun,
     submitandcompile,
-    submitTest
+    submitTest,
+    getStudentProfile,
+    updateStudentFields
 };

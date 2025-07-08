@@ -12,7 +12,9 @@ import {
     getQuestionforStudent,
     compileAndRun,
     submitandcompile,
-    submitTest
+    submitTest,
+    getStudentProfile,
+    updateStudentFields
 } from "./student-database.js";
 
 // Controller to handle inserting a new student
@@ -281,6 +283,43 @@ async function handleSubmitTest(req, res) {
     }
 }
 
+// Controller to handle fetching student profile by student_id
+async function handleGetStudentProfile(req, res) {
+    try {
+        const { studentId } = req.query;
+        if (!studentId) {
+            return res.status(400).json({ success: false, message: "Missing required parameter: studentId" });
+        }
+        const result = await getStudentProfile(studentId);
+        if (result.success) {
+            res.status(200).json(result);
+        } else {
+            res.status(404).json(result);
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Unexpected error occurred", error });
+    }
+}
+
+// Controller to handle updating any number of fields for a student
+async function handleUpdateStudentFields(req, res) {
+    try {
+        const { studentId } = req.params;
+        const fieldsToUpdate = req.body;
+        if (!studentId || !fieldsToUpdate || Object.keys(fieldsToUpdate).length === 0) {
+            return res.status(400).json({ success: false, message: "Missing studentId or fields to update" });
+        }
+        const result = await updateStudentFields(studentId, fieldsToUpdate);
+        if (result.success) {
+            res.status(200).json(result);
+        } else {
+            res.status(400).json(result);
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Unexpected error occurred", error });
+    }
+}
+
 // Export all controllers
 export {
     handleInsertStudent,
@@ -296,5 +335,7 @@ export {
     handleGetQuestionforStudent,
     handleCompileAndRun,
     handleSubmitAndCompile,
-    handleSubmitTest
+    handleSubmitTest,
+    handleGetStudentProfile,
+    handleUpdateStudentFields
 };
