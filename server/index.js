@@ -47,7 +47,8 @@ const {
     handleSubmitAndCompile,
     handleSubmitTest,
     handleGetStudentProfile,
-    handleUpdateStudentFields
+    handleUpdateStudentFields,
+    handleGetTestResultStatus
 } = require("./students/students-middle-controler.js");
 
 // Import controllers for courses
@@ -127,6 +128,8 @@ app.post("/students/submit-and-compile", handleSubmitAndCompile); // Submit and 
 app.post("/students/submit-test", handleSubmitTest); // Submit test and update resume
 app.get("/students/profile/getProfile", handleGetStudentProfile); // Get student profile by studentId
 app.put("/students/update-fields/:studentId", handleUpdateStudentFields); // Update any number of student fields
+// app.get("/students/test-result-status", handleGetTestResultStatus); // Get test result status
+app.post("/students/test-result-status", handleGetTestResultStatus); // Get test result status and summary by unique fields
 
 // Routes for Courses
 // --------------------------------------------------------------------------------

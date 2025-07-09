@@ -14,7 +14,8 @@ import {
     submitandcompile,
     submitTest,
     getStudentProfile,
-    updateStudentFields
+    updateStudentFields,
+    getTestResultStatus
 } from "./student-database.js";
 
 // Controller to handle inserting a new student
@@ -320,6 +321,31 @@ async function handleUpdateStudentFields(req, res) {
     }
 }
 
+// Controller to handle fetching test result status and summary
+async function handleGetTestResultStatus(req, res) {
+    try {
+        const { university_id, student_id, course_id, unit_id, sub_unit_id, result_type } = req.body;
+        // Validate required fields
+        const requiredFields = [
+            "university_id", "student_id", "course_id", "unit_id", "sub_unit_id", "result_type"
+        ];
+        for (const field of requiredFields) {
+            if (!req.body[field]) {
+                return res.status(400).json({ success: false, message: `Missing required field: ${field}` });
+            }
+        }
+        // Call the database function to fetch the result
+        const result = await getTestResultStatus({ university_id, student_id, course_id, unit_id, sub_unit_id, result_type });
+        if (result.success) {
+            res.status(200).json(result);
+        } else {
+            res.status(404).json(result);
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Unexpected error occurred", error });
+    }
+}
+
 // Export all controllers
 export {
     handleInsertStudent,
@@ -337,5 +363,6 @@ export {
     handleSubmitAndCompile,
     handleSubmitTest,
     handleGetStudentProfile,
-    handleUpdateStudentFields
+    handleUpdateStudentFields,
+    handleGetTestResultStatus
 };

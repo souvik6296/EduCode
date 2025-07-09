@@ -754,6 +754,16 @@ async function submitTest(details) {
         submitted_at // should be ISO string
     } = details;
     try {
+        // 0. Delete previous result with same unique fields
+        await supabaseClient
+            .from("results")
+            .delete()
+            .eq("university_id", university_id)
+            .eq("student_id", student_id)
+            .eq("course_id", course_id)
+            .eq("unit_id", unit_id)
+            .eq("sub_unit_id", sub_unit_id)
+            .eq("result_type", result_type);
         // 1. Insert into results table
         const { data: resultData, error: resultError } = await supabaseClient
             .from("results")
@@ -843,6 +853,46 @@ async function updateStudentFields(studentId, fieldsToUpdate) {
     }
 }
 
+/**
+ * Get test result status by unique fields, fetch score and total from results table
+ * @param {Object} params - { university_id, student_id, course_id, unit_id, sub_unit_id, result_type }
+ * @returns {Promise<Object>} - { total, marks_obtained, percentage, status }
+ */
+async function getTestResultStatus(params) {
+    const { university_id, student_id, course_id, unit_id, sub_unit_id, result_type } = params;
+    try {
+        const { data, error } = await supabaseClient
+            .from("results")
+            .select("marks_obtained, total_marks")
+            .eq("university_id", university_id)
+            .eq("student_id", student_id)
+            .eq("course_id", course_id)
+            .eq("unit_id", unit_id)
+            .eq("sub_unit_id", sub_unit_id)
+            .eq("result_type", result_type)
+            .single();
+        if (error || !data) {
+            return { success: false, message: "Result not found", error };
+        }
+        const total = Number(data.total_marks);
+        const marks_obtained = Number(data.marks_obtained);
+        if (isNaN(total) || isNaN(marks_obtained) || total === 0) {
+            return { success: false, message: "Invalid total or marks obtained" };
+        }
+        const percentage = (marks_obtained / total) * 100;
+        const status = percentage >= 50 ? "passed" : "failed";
+        return {
+            success: true,
+            total,
+            marks_obtained,
+            percentage: Number(percentage.toFixed(2)),
+            status
+        };
+    } catch (err) {
+        return { success: false, message: "Unexpected error occurred", error: err };
+    }
+}
+
 // Export all functions
 export {
     insertStudent,
@@ -860,5 +910,6 @@ export {
     submitandcompile,
     submitTest,
     getStudentProfile,
-    updateStudentFields
+    updateStudentFields,
+    getTestResultStatus
 };
