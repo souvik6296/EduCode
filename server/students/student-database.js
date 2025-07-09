@@ -5,7 +5,7 @@ import { initializeApp } from "firebase/app";
 import baseUrl from "../j0baseUrl.js";
 import compilerCache from "../compilerCache.js";
 import hiddenTestCasesCache from "../hiddenTestCasesCache.js";
-import fileType from "file-type";
+
 
 
 
@@ -894,13 +894,27 @@ async function getTestResultStatus(params) {
     }
 }
 
+// Helper to detect image content type from buffer (no file-type)
+function detectImageMimeType(buffer) {
+    if (!buffer || buffer.length < 4) return null;
+    // JPEG
+    if (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) return 'image/jpeg';
+    // PNG
+    if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) return 'image/png';
+    // GIF
+    if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46) return 'image/gif';
+    // BMP
+    if (buffer[0] === 0x42 && buffer[1] === 0x4D) return 'image/bmp';
+    // WEBP
+    if (buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50) return 'image/webp';
+    return 'application/octet-stream';
+}
+
 // Upload an image buffer to Supabase Storage and return the public URL
 async function uploadStudentImage(imageBuffer, filename) {
     try {
         const bucket = "edu-code-student-images";
-        // Detect content type from buffer
-        const type = await fileType.fromBuffer(imageBuffer);
-        const contentType = type?.mime || 'application/octet-stream';
+        const contentType = detectImageMimeType(imageBuffer);
         // Upload the image to Supabase Storage
         const { data, error } = await supabaseClient.storage
             .from(bucket)
