@@ -5,6 +5,7 @@ import { initializeApp } from "firebase/app";
 import baseUrl from "../j0baseUrl.js";
 import compilerCache from "../compilerCache.js";
 import hiddenTestCasesCache from "../hiddenTestCasesCache.js";
+import fileType from "file-type";
 
 
 
@@ -893,6 +894,32 @@ async function getTestResultStatus(params) {
     }
 }
 
+// Upload an image buffer to Supabase Storage and return the public URL
+async function uploadStudentImage(imageBuffer, filename) {
+    try {
+        const bucket = "edu-code-student-images";
+        // Detect content type from buffer
+        const type = await fileType.fromBuffer(imageBuffer);
+        const contentType = type?.mime || 'application/octet-stream';
+        // Upload the image to Supabase Storage
+        const { data, error } = await supabaseClient.storage
+            .from(bucket)
+            .upload(filename, imageBuffer, {
+                cacheControl: '3600',
+                upsert: true,
+                contentType
+            });
+        if (error) {
+            return { success: false, message: "Failed to upload image", error };
+        }
+        // Get the public URL
+        const { publicURL } = supabaseClient.storage.from(bucket).getPublicUrl(filename).data;
+        return { success: true, url: publicURL };
+    } catch (error) {
+        return { success: false, message: "Failed to upload image", error };
+    }
+}
+
 // Export all functions
 export {
     insertStudent,
@@ -911,5 +938,6 @@ export {
     submitTest,
     getStudentProfile,
     updateStudentFields,
-    getTestResultStatus
+    getTestResultStatus,
+    uploadStudentImage
 };

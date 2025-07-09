@@ -15,7 +15,8 @@ import {
     submitTest,
     getStudentProfile,
     updateStudentFields,
-    getTestResultStatus
+    getTestResultStatus,
+    uploadStudentImage
 } from "./student-database.js";
 
 // Controller to handle inserting a new student
@@ -346,6 +347,24 @@ async function handleGetTestResultStatus(req, res) {
     }
 }
 
+// Controller to handle image upload for student and return download URL
+async function handleUploadStudentImage(req, res) {
+    try {
+        if (!req.file || !req.file.buffer) {
+            return res.status(400).json({ success: false, message: "No image file uploaded" });
+        }
+        const filename = req.file.originalname || `student_${Date.now()}`;
+        const result = await uploadStudentImage(req.file.buffer, filename);
+        if (result.success) {
+            res.status(200).json({ success: true, url: result.url });
+        } else {
+            res.status(500).json(result);
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Unexpected error occurred", error });
+    }
+}
+
 // Export all controllers
 export {
     handleInsertStudent,
@@ -364,5 +383,6 @@ export {
     handleSubmitTest,
     handleGetStudentProfile,
     handleUpdateStudentFields,
-    handleGetTestResultStatus
+    handleGetTestResultStatus,
+    handleUploadStudentImage
 };
