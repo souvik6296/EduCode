@@ -926,9 +926,12 @@ async function uploadStudentImage(imageBuffer, filename) {
         if (error) {
             return { success: false, message: "Failed to upload image", error };
         }
-        // Get the public URL
-        const { publicURL } = supabaseClient.storage.from(bucket).getPublicUrl(filename).data;
-        return { success: true, url: publicURL };
+        // Get the public URL (fix for Supabase v2+)
+        const { data: urlData, error: urlError } = supabaseClient.storage.from(bucket).getPublicUrl(filename);
+        if (urlError || !urlData || !urlData.publicUrl) {
+            return { success: false, message: "Failed to get public URL", error: urlError };
+        }
+        return { success: true, url: urlData.publicUrl };
     } catch (error) {
         return { success: false, message: "Failed to upload image", error };
     }
