@@ -945,6 +945,58 @@ async function uploadStudentImage(imageBuffer, filename) {
     }
 }
 
+/**
+ * Resume a test: save the last submissions for multiple coding or MCQ questions to Supabase
+ * @param {Object} params - { student_id, course_id, unit_id, sub_unit_id, questions, question_type }
+ * questions: Array of { question_id, code }
+ * @returns {Promise<Object>} - Success or error object
+ */
+async function resumeTest({ student_id, course_id, unit_id, sub_unit_id, questions, question_type }) {
+    try {
+        // Prepare payloads for all questions
+        const now = new Date().toISOString();
+        const payloads = questions.map(q => ({
+            student_id,
+            course_id,
+            unit_id,
+            sub_unit_id,
+            question_id: q.question_id,
+            last_submitted_code: q.code,
+            status: "resumed",
+            last_submission: now
+        }));
+        // Upsert all submissions
+        const { data, error } = await supabaseClient
+            .from('student_submission')
+            .upsert(payloads, {
+                onConflict: ['student_id', 'course_id', 'unit_id', 'sub_unit_id', 'question_id']
+            })
+            .select();
+        if (error) {
+            return { success: false, message: "Failed to save last submissions", error };
+        }
+        // Optionally update resume status in resumes table
+        let resumeUpdate = {};
+        if (question_type === "Coding") {
+            resumeUpdate = { subunit_coding_status: "resumed" };
+        } else if (question_type === "MCQ") {
+            resumeUpdate = { subunit_mcq_status: "resumed" };
+        }
+        if (Object.keys(resumeUpdate).length > 0) {
+            await supabaseClient
+                .from("resumes")
+                .update(resumeUpdate)
+                .eq("student_id", student_id)
+                .eq("course_id", course_id)
+                .eq("unit_id", unit_id)
+                .eq("sub_unit_id", sub_unit_id);
+        }
+        return { success: true, message: "Test resumed and last submissions saved", data };
+    } catch (error) {
+        return { success: false, message: "Unexpected error occurred", error };
+    }
+}
+
 // Export all functions
 export {
     insertStudent,
@@ -964,5 +1016,6 @@ export {
     getStudentProfile,
     updateStudentFields,
     getTestResultStatus,
-    uploadStudentImage
+    uploadStudentImage,
+    resumeTest
 };

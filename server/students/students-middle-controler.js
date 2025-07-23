@@ -16,7 +16,8 @@ import {
     getStudentProfile,
     updateStudentFields,
     getTestResultStatus,
-    uploadStudentImage
+    uploadStudentImage,
+    resumeTest
 } from "./student-database.js";
 
 // Controller to handle inserting a new student
@@ -267,12 +268,15 @@ async function handleSubmitTest(req, res) {
         const details = req.body;
         // Validate required fields
         const requiredFields = [
-            "university_id", "student_id", "course_id", "unit_id", "sub_unit_id", "result_type", "score", "total", "submitted_at"
+            "university_id", "student_id", "course_id", "unit_id", "sub_unit_id", "result_type", "total", "submitted_at"
         ];
         for (const field of requiredFields) {
             if (!details[field]) {
                 return res.status(400).json({ success: false, message: `Missing required field: ${field}` });
             }
+        }
+        if(!details.score){
+            details.score = 0; // Default score if not provided
         }
         const result = await submitTest(details);
         if (result.success) {
@@ -365,6 +369,25 @@ async function handleUploadStudentImage(req, res) {
     }
 }
 
+// Controller to handle resuming a test and saving last submissions
+async function handleResumeTest(req, res) {
+    try {
+        const { student_id, course_id, unit_id, sub_unit_id, questions, question_type } = req.body;
+        // Validate required fields
+        if (!student_id || !course_id || !unit_id || !sub_unit_id || !Array.isArray(questions) || !question_type) {
+            return res.status(400).json({ success: false, message: "Missing required fields: student_id, course_id, unit_id, sub_unit_id, questions (array), or question_type" });
+        }
+        const result = await resumeTest({ student_id, course_id, unit_id, sub_unit_id, questions, question_type });
+        if (result.success) {
+            res.status(200).json(result);
+        } else {
+            res.status(400).json(result);
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Unexpected error occurred", error });
+    }
+}
+
 // Export all controllers
 export {
     handleInsertStudent,
@@ -384,5 +407,6 @@ export {
     handleGetStudentProfile,
     handleUpdateStudentFields,
     handleGetTestResultStatus,
-    handleUploadStudentImage
+    handleUploadStudentImage,
+    handleResumeTest
 };
