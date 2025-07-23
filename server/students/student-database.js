@@ -355,7 +355,15 @@ async function getQuestionforStudent(courseId, unitId, subUnitId, studentId, que
 
         if (resumeData && questionType === "MCQ" && resumeData.resumed_mcq_question_ids?.length > 0) {
             const mcq = subUnitData.mcq || {};
-            const selected = resumeData.resumed_mcq_question_ids.map(id => mcq[id]).filter(Boolean);
+            const selected = resumeData.resumed_mcq_question_ids.map(id => {
+                const question = mcq[id];
+                if (!question) return null;
+
+                return {
+                    id,
+                    ...question
+                };
+            }).filter(Boolean);
             questionsToReturn.mcqQuestions = selected;
             return {
                 success: true,
@@ -555,12 +563,12 @@ async function compileAndRun(userWrittenCode, languageId, sampleInputOutput, cou
             const compilerResult = results[index * 2];     // Even indices: Compiler code runs
             const userResult = results[index * 2 + 1];    // Odd indices: User code runs
 
-            const testCasePassed = 
+            const testCasePassed =
                 userResult.stdout?.trim() === compilerResult.stdout?.trim();
 
             return {
                 [`testCase${index + 1}`]: {
-                    
+
                     // compilerResult
                     input: input.trim(),
                     testCasePassed,
@@ -599,7 +607,7 @@ async function submitandcompile(userWrittenCode, languageId, courseId, unitId, s
     try {
         // 1. Check cache for compiler code and hidden test cases
         const cacheKey = `${courseId}&${unitId}&${subUnitId}&${questionId}`;
-        
+
         let compilerCode = compilerCache[cacheKey];
         let hiddenTestCases = hiddenTestCasesCache[cacheKey];
 
@@ -750,7 +758,7 @@ async function submitTest(details) {
         unit_id,
         sub_unit_id,
         result_type, // 'coding' or 'mcq'
-        score : marks_obtained, // Marks obtained by the student
+        score: marks_obtained, // Marks obtained by the student
         total: total_marks, // Total marks for the test
         submitted_at // should be ISO string
     } = details;
