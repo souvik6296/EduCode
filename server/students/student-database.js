@@ -355,16 +355,18 @@ async function getQuestionforStudent(courseId, unitId, subUnitId, studentId, que
 
         if (resumeData && questionType === "MCQ" && resumeData.resumed_mcq_question_ids?.length > 0) {
             const mcq = subUnitData.mcq || {};
-            const selected = resumeData.resumed_mcq_question_ids.map(id => {
+            const selected = await Promise.all(resumeData.resumed_mcq_question_ids.map(async (id) => {
                 const question = mcq[id];
                 if (!question) return null;
+                const lastSubmission = await getLastSubmission(id);
 
                 return {
                     id,
-                    ...question
+                    ...question,
+                    last_index : lastSubmission
                 };
-            }).filter(Boolean);
-            questionsToReturn.mcqQuestions = selected;
+            }));
+            questionsToReturn.mcqQuestions = selected.filter(Boolean);
             return {
                 success: true,
                 message: "Resumed questions fetched successfully",
