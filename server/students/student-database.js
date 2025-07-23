@@ -175,6 +175,8 @@ async function loginStudent(userId, password) {
             return { success: false, message: "Invalid credentials", error };
         }
 
+        delete data.password;
+
         return { success: true, message: "Login successful", data };
     } catch (err) {
         console.error("Unexpected error during student login:", err);
