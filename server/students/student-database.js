@@ -953,7 +953,7 @@ async function uploadStudentImage(imageBuffer, filename) {
  * questions: Array of { question_id, code }
  * @returns {Promise<Object>} - Success or error object
  */
-async function resumeTest({ student_id, course_id, unit_id, sub_unit_id, questions, question_type, status }) {
+async function resumeTest({ student_id, course_id, unit_id, sub_unit_id, questions, question_type }) {
     try {
         // Prepare payloads for all questions
         const now = new Date().toISOString();
@@ -964,7 +964,7 @@ async function resumeTest({ student_id, course_id, unit_id, sub_unit_id, questio
             sub_unit_id,
             question_id: q.question_id,
             last_submitted_code: q.code,
-            status,
+            status: q.status,
             last_submission: now
         }));
         // Upsert all submissions

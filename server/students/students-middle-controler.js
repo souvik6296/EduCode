@@ -372,12 +372,12 @@ async function handleUploadStudentImage(req, res) {
 // Controller to handle resuming a test and saving last submissions
 async function handleResumeTest(req, res) {
     try {
-        const { student_id, course_id, unit_id, sub_unit_id, questions, question_type, status } = req.body;
+        const { student_id, course_id, unit_id, sub_unit_id, questions, question_type } = req.body;
         // Validate required fields
         if (!student_id || !course_id || !unit_id || !sub_unit_id || !Array.isArray(questions) || !question_type) {
             return res.status(400).json({ success: false, message: "Missing required fields: student_id, course_id, unit_id, sub_unit_id, questions (array), or question_type" });
         }
-        const result = await resumeTest({ student_id, course_id, unit_id, sub_unit_id, questions, question_type, status: status || "resumeMCQ" });
+        const result = await resumeTest({ student_id, course_id, unit_id, sub_unit_id, questions, question_type});
         if (result.success) {
             res.status(200).json(result);
         } else {
