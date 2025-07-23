@@ -363,7 +363,7 @@ async function getQuestionforStudent(courseId, unitId, subUnitId, studentId, que
                 return {
                     id,
                     ...question,
-                    last_index : lastSubmission.last_submitted_code
+                    last_index : lastSubmission
                 };
             }));
             questionsToReturn.mcqQuestions = selected.filter(Boolean);
