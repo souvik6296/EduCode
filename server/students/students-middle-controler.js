@@ -17,8 +17,22 @@ import {
     updateStudentFields,
     getTestResultStatus,
     uploadStudentImage,
-    resumeTest
+    resumeTest,
+    checkTestSecurityCode
 } from "./student-database.js";
+// Controller to check test security code
+async function handleCheckTestSecurityCode(req, res) {
+    try {
+        const { courseId, unitId, subUnitId, securityCode } = req.body;
+        if (!courseId || !unitId || !subUnitId || !securityCode) {
+            return res.status(400).json({ success: false, message: "Missing required fields: courseId, unitId, subUnitId, or securityCode" });
+        }
+        const result = await checkTestSecurityCode(courseId, unitId, subUnitId, securityCode);
+        res.status(200).json({ success: true, ...result });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Unexpected error occurred", error });
+    }
+}
 
 // Controller to handle inserting a new student
 async function handleInsertStudent(req, res) {
@@ -408,5 +422,6 @@ export {
     handleUpdateStudentFields,
     handleGetTestResultStatus,
     handleUploadStudentImage,
-    handleResumeTest
+    handleResumeTest,
+    handleCheckTestSecurityCode
 };

@@ -252,6 +252,7 @@ async function getCourseforStudents(courseId, studentId) {
                     // Remove 'mcq' and 'coding' keys if they exist
                     delete subUnit.mcq;
                     delete subUnit.coding;
+                    delete subUnit.security_code;
 
                     // Fetch progress details from the resumes table
                     const { data: resumeData, error: resumeError } = await supabaseClient
@@ -1001,7 +1002,32 @@ async function resumeTest({ student_id, course_id, unit_id, sub_unit_id, questio
     }
 }
 
-// Export all functions
+
+
+
+// Function to check security code for a test
+/**
+ * Checks if the provided security code matches the one in Firebase for the given course/unit/subunit
+ * @param {string} courseId
+ * @param {string} unitId
+ * @param {string} subUnitId
+ * @param {string} securityCode
+ * @returns {Promise<{ testAllowed: boolean }>} - { testAllowed: true/false }
+ */
+async function checkTestSecurityCode(courseId, unitId, subUnitId, securityCode) {
+    try {
+        const codeRef = ref(db, `EduCode/Courses/${courseId}/units/${unitId}/sub-units/${subUnitId}/security_code`);
+        const snapshot = await get(codeRef);
+        if (!snapshot.exists()) {
+            return { testAllowed: false };
+        }
+        const storedCode = snapshot.val();
+        return { testAllowed: storedCode === securityCode };
+    } catch (error) {
+        return { testAllowed: false };
+    }
+}
+
 export {
     insertStudent,
     getAllStudents,
@@ -1021,5 +1047,6 @@ export {
     updateStudentFields,
     getTestResultStatus,
     uploadStudentImage,
-    resumeTest
+    resumeTest,
+    checkTestSecurityCode
 };
