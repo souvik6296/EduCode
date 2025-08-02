@@ -52,7 +52,9 @@ const {
     handleUploadStudentImage,
     handleResumeTest,
     handleCheckTestSecurityCode,
+    handleGeminiChat
 } = require("./students/students-middle-controler.js");
+
 
 // Import controllers for courses
 const {
@@ -135,6 +137,8 @@ app.put("/students/update-fields/:studentId", handleUpdateStudentFields); // Upd
 app.post("/students/test-result-status", handleGetTestResultStatus); // Get test result status and summary by unique fields
 app.post("/students/upload-image", uploadMiddleware.single("image"), handleUploadStudentImage); // Upload student image and get download URL
 app.post("/students/resume-test", handleResumeTest); // Resume test and save last submissions
+// Gemini AI Chatbot endpoint
+app.post("/students/gemini-chat", handleGeminiChat); // Chat with Gemini AI
 
 // Route to check test security code
 app.post("/students/check-test-security", handleCheckTestSecurityCode); // Check test security code

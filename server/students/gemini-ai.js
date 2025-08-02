@@ -1,0 +1,75 @@
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
+// Gemini API configuration
+const GEMINI_API_KEY = "AIzaSyClNvwygY7QhdVUYfuKTzC5YBW2-o3Myp8";
+const MODEL_NAME = "gemini-1.5-flash";
+
+// In-memory session store (for demo; use persistent store for production)
+const sessionStore = {};
+
+
+// Set or update the system prompt for a specific session
+function setSystemPrompt(sessionId, prompt) {
+    if (!sessionStore[sessionId]) return false;
+    // Replace the first message if it's a system prompt, else insert
+    if (sessionStore[sessionId][0]?.role === "system") {
+        sessionStore[sessionId][0].parts = [{ text: prompt }];
+    } else {
+        sessionStore[sessionId].unshift({ role: "system", parts: [{ text: prompt }] });
+    }
+    return true;
+}
+
+
+/**
+ * Chat with Gemini 1.5 Flash model, managing session and per-session system prompt.
+ * @param {string} query - User's message
+ * @param {string} [sessionId] - Optional session ID
+ * @param {string} [systemPrompt] - Optional system prompt (used only when creating a new session)
+ * @returns {Promise<{response: string, sessionId: string}>}
+ */
+async function chatWithGemini(query, sessionId = null, question_details = null) {
+    // Use provided session or create new
+    if (!sessionId || !sessionStore[sessionId]) {
+        sessionId = Math.random().toString(36).slice(2) + Date.now();
+        let prom = "You are a helpful AI assistant.";
+        if (question_details!=null && typeof question_details === "object") {
+            const desc = question_details.description || "";
+            const constraints = question_details.constraints || "";
+            const inputStr = Array.isArray(question_details.input) ? question_details.input.map(input => input.text).join(", ") : "";
+            const outputStr = Array.isArray(question_details.output) ? question_details.output.map(output => output.text).join(", ") : "";
+            prom = `the given question is ${desc}, code constraints are ${constraints}, and the inputs are ${inputStr} and the simultaneus outputs are ${outputStr}`;
+        }
+        setSystemPrompt(sessionId, prom);
+    }
+
+    // Add user message
+    sessionStore[sessionId].push({ role: "user", parts: [{ text: query }] });
+
+    // Prepare messages for Gemini SDK
+    const messages = sessionStore[sessionId].map(msg => ({
+        role: msg.role,
+        parts: msg.parts.map(part => part.text)
+    }));
+
+    // Initialize Gemini SDK
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+
+    // Send chat request
+    let result, responseText = "";
+    try {
+        const chatSession = model.startChat({ history: messages });
+        result = await chatSession.sendMessage(query);
+        responseText = result.response.text();
+    } catch (err) {
+        responseText = `[Gemini error: ${err.message || err}]`;
+    }
+
+    // Add assistant response to session
+    sessionStore[sessionId].push({ role: "model", parts: [{ text: responseText }] });
+
+    return { response: responseText, sessionId };
+}
+
+module.exports = { chatWithGemini, setSystemPrompt };

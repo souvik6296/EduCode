@@ -1,3 +1,18 @@
+const { chatWithGemini } = require("./gemini-ai.js");
+
+// Middleware to handle Gemini chatbot requests
+async function handleGeminiChat(req, res) {
+    try {
+        const { query, sessionId, question_details } = req.body;
+        if (!query) {
+            return res.status(400).json({ success: false, message: "Missing query in request body" });
+        }
+        const result = await chatWithGemini(query, sessionId, question_details);
+        res.status(200).json({ success: true, ...result });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Unexpected error occurred", error });
+    }
+}
 import {
     insertStudent,
     getAllStudents,
@@ -423,5 +438,6 @@ export {
     handleGetTestResultStatus,
     handleUploadStudentImage,
     handleResumeTest,
-    handleCheckTestSecurityCode
+    handleCheckTestSecurityCode,
+    handleGeminiChat,
 };
