@@ -366,7 +366,7 @@ async function getQuestionforStudent(courseId, unitId, subUnitId, studentId, que
                 return {
                     id,
                     ...question,
-                    last_index : lastSubmission.last_submitted_code
+                    last_index: lastSubmission && typeof lastSubmission.last_submitted_code !== 'undefined' ? lastSubmission.last_submitted_code : null
                 };
             }));
             questionsToReturn.mcqQuestions = selected.filter(Boolean);
@@ -402,7 +402,13 @@ async function getQuestionforStudent(courseId, unitId, subUnitId, studentId, que
 
             const selected = shuffle ? mcqArray.sort(() => Math.random() - 0.5) : mcqArray;
 
-            questionsToReturn.mcqQuestions = selected;
+            // For each MCQ, ensure last_index is always present (null if not available)
+            const cleanSelected = selected.map(q => ({
+                ...q,
+                last_index: null
+            }));
+
+            questionsToReturn.mcqQuestions = cleanSelected;
             var mcqIds = selected.map(q => q.id);
         }
 
