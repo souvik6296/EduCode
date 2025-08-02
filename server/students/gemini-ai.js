@@ -20,7 +20,7 @@ async function chatWithGemini(query, sessionId = null, question_details = null) 
     if (!sessionId || !sessionStore[sessionId]) {
         sessionId = Math.random().toString(36).slice(2) + Date.now();
         let prom = "You are a helpful AI assistant.";
-        
+
         if (question_details && typeof question_details === "object") {
             const desc = question_details.description || "";
             const constraints = question_details.constraints || "";
@@ -106,7 +106,10 @@ You are an AI tutor on EduCode, a secure and ethical coding education platform.
     try {
         const chatSession = await model.startChat({
             history: messages,
-            systemInstruction: sessionStore[sessionId].systemPrompt
+            systemInstruction: {
+                role: "system",
+                parts: [{ text: sessionStore[sessionId].systemPrompt }]
+            }
         });
 
         result = await chatSession.sendMessage(query);
