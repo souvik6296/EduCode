@@ -5,18 +5,14 @@ const GEMINI_API_KEY = "AIzaSyClNvwygY7QhdVUYfuKTzC5YBW2-o3Myp8";
 const MODEL_NAME = "gemini-1.5-flash";
 
 // In-memory session store (for demo; use persistent store for production)
+// Structure: { [sessionId]: { history: [...], systemPrompt: string } }
 const sessionStore = {};
 
 
 // Set or update the system prompt for a specific session
 function setSystemPrompt(sessionId, prompt) {
     if (!sessionStore[sessionId]) return false;
-    // Replace the first message if it's a system prompt, else insert
-    if (sessionStore[sessionId][0]?.role === "system") {
-        sessionStore[sessionId][0].parts = [{ text: prompt }];
-    } else {
-        sessionStore[sessionId].unshift({ role: "system", parts: [{ text: prompt }] });
-    }
+    sessionStore[sessionId].systemPrompt = prompt;
     return true;
 }
 
@@ -73,14 +69,14 @@ You are an AI tutor on EduCode, a secure and ethical coding education platform.
 - Your help should make the user better at solving problems, not dependent on shortcuts.
 `;
         }
-        sessionStore[sessionId] = [{ role: "system", parts: [{ text: prom }] }];
+        sessionStore[sessionId] = { history: [], systemPrompt: prom };
     }
 
     // Add user message
-    sessionStore[sessionId].push({ role: "user", parts: [{ text: query }] });
+    sessionStore[sessionId].history.push({ role: "user", parts: [{ text: query }] });
 
     // Prepare messages for Gemini SDK
-    const messages = sessionStore[sessionId].map(msg => ({
+    const messages = sessionStore[sessionId].history.map(msg => ({
         role: msg.role,
         parts: msg.parts.map(part => part.text)
     }));
@@ -92,7 +88,7 @@ You are an AI tutor on EduCode, a secure and ethical coding education platform.
     // Send chat request
     let result, responseText = "";
     try {
-        const chatSession = model.startChat({ history: messages });
+        const chatSession = model.startChat({ history: messages, systemInstruction: sessionStore[sessionId].systemPrompt });
         result = await chatSession.sendMessage(query);
         responseText = result.response.text();
     } catch (err) {
@@ -110,7 +106,7 @@ You are an AI tutor on EduCode, a secure and ethical coding education platform.
     }
 
     // Add assistant response to session
-    sessionStore[sessionId].push({ role: "model", parts: [{ text: responseText }] });
+    sessionStore[sessionId].history.push({ role: "model", parts: [{ text: responseText }] });
 
     return { response: responseText, sessionId };
 }
