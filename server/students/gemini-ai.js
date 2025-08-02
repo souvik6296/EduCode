@@ -72,13 +72,14 @@ You are an AI tutor on EduCode, a secure and ethical coding education platform.
         sessionStore[sessionId] = { history: [], systemPrompt: prom };
     }
 
-    // Add user message
+
+    // Add user message (always as array of {text: ...})
     sessionStore[sessionId].history.push({ role: "user", parts: [{ text: query }] });
 
-    // Prepare messages for Gemini SDK
+    // Defensive: ensure all parts are objects with a text property
     const messages = sessionStore[sessionId].history.map(msg => ({
         role: msg.role,
-        parts: msg.parts.map(part => part.text)
+        parts: msg.parts.map(part => typeof part === 'string' ? part : (typeof part.text === 'string' ? part.text : String(part)))
     }));
 
     // Initialize Gemini SDK
