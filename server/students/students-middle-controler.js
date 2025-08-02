@@ -8,9 +8,13 @@ async function handleGeminiChat(req, res) {
             return res.status(400).json({ success: false, message: "Missing query in request body" });
         }
         const result = await chatWithGemini(query, sessionId, question_details);
+        if (result && result.error) {
+            // If Gemini returned an error, show it in the response
+            return res.status(500).json({ success: false, message: "Gemini error", error: result.error, response: result.response });
+        }
         res.status(200).json({ success: true, ...result });
     } catch (error) {
-        res.status(500).json({ success: false, message: "Unexpected error occurred", error });
+        res.status(500).json({ success: false, message: "Unexpected error occurred", error: { message: error.message, stack: error.stack, raw: error } });
     }
 }
 import {

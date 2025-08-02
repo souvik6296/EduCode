@@ -21,13 +21,7 @@ function setSystemPrompt(sessionId, prompt) {
 }
 
 
-/**
- * Chat with Gemini 1.5 Flash model, managing session and per-session system prompt.
- * @param {string} query - User's message
- * @param {string} [sessionId] - Optional session ID
- * @param {string} [systemPrompt] - Optional system prompt (used only when creating a new session)
- * @returns {Promise<{response: string, sessionId: string}>}
- */
+
 async function chatWithGemini(query, sessionId = null, question_details = null) {
     // Use provided session or create new
     if (!sessionId || !sessionStore[sessionId]) {
@@ -102,7 +96,17 @@ You are an AI tutor on EduCode, a secure and ethical coding education platform.
         result = await chatSession.sendMessage(query);
         responseText = result.response.text();
     } catch (err) {
-        responseText = `[Gemini error: ${err.message || err}]`;
+        responseText = `[Gemini error: ${err && err.message ? err.message : JSON.stringify(err)}]`;
+        // Attach error details for debugging
+        return {
+            response: responseText,
+            sessionId,
+            error: {
+                message: err && err.message ? err.message : undefined,
+                stack: err && err.stack ? err.stack : undefined,
+                raw: err
+            }
+        };
     }
 
     // Add assistant response to session
