@@ -32,7 +32,7 @@ async function chatWithGemini(query, sessionId = null, question_details = null) 
             const constraints = question_details.constraints || "";
             const inputStr = Array.isArray(question_details.input) ? question_details.input.map(input => input.text).join(", ") : "";
             const outputStr = Array.isArray(question_details.output) ? question_details.output.map(output => output.text).join(", ") : "";
-            const prom = `
+            prom = `
 You are an AI tutor on EduCode, a secure and ethical coding education platform.
 
 🎯 Your primary goal is to **help the learner understand the logic, thought process, and approach** behind solving coding problems — **without ever writing, generating, suggesting, or referencing any code**.
@@ -72,8 +72,8 @@ You are an AI tutor on EduCode, a secure and ethical coding education platform.
 - You are an AI **logic coach**, not a code generator.
 - Your help should make the user better at solving problems, not dependent on shortcuts.
 `;
-            setSystemPrompt(sessionId, prom);
         }
+        sessionStore[sessionId] = [{ role: "system", parts: [{ text: prom }] }];
     }
 
     // Add user message
