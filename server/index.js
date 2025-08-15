@@ -9,7 +9,8 @@ const { AccessToken } = require('livekit-server-sdk');
 const LIVEKIT_URL = "wss://educode-190pkw3r.livekit.cloud";
 const LIVEKIT_API_KEY = "API24izSzNSuaNf";
 const LIVEKIT_API_SECRET = "uaLxHpEB5ivWwTGc9tf0t0klYzjbszqt2HMLV3aEG3S";
-const roomToStudentList = {};
+// const roomToStudentList = {};
+const allowedStudentCache = require("./allowedStudentCache.js");
 
 const createToken = async (teacherId, studentList) => {
     // If this room doesn't exist, it'll be automatically created when the first
@@ -25,13 +26,17 @@ const createToken = async (teacherId, studentList) => {
         ttl: '10m',
     });
     at.addGrant({ roomJoin: true, room: roomName });
+    const roomToStudentList = allowedStudentCache.get("roomToStudentList");
+
     roomToStudentList[roomName] = studentList;
+    allowedStudentCache.set("roomToStudentList", roomToStudentList);
 
     return await at.toJwt();
 };
 
 const getToken = async (ID) => {
     // Iterate over every key of roomToStudentList and check for every list if the studentId is there join the student in that room
+    const roomToStudentList = allowedStudentCache.get("roomToStudentList");
     for (const [roomName, studentList] of Object.entries(roomToStudentList)) {
         if (studentList.includes(ID)) {
             // return await createToken(roomName, [ID]);
@@ -42,10 +47,19 @@ const getToken = async (ID) => {
                 ttl: '10m',
             });
             at.addGrant({ roomJoin: true, room: roomName });
-            return await at.toJwt();
+            const data = {
+                token: await at.toJwt(),
+                success: true
+            }
+            return data;
         }
     }
-    throw new Error('Student not found');
+    const data = {
+        msg: "Teacher not joined yet please wait...",
+        success: false
+    }
+
+    return data;
 };
 
 
@@ -220,8 +234,12 @@ app.delete("/courses/:courseId/units/:unitId/sub-units/:subUnitId", handleDelete
 
 
 app.get('/getToken', async (req, res) => {
-    const token = await getToken(req.query.ID);
-  res.status(200).send({ token });
+    const data = await getToken(req.query.ID);
+    if (!data.success) {
+        return res.status(400).send(data);
+    }else if (data.success) {
+        return res.status(200).send(data);
+    }
 });
 
 app.post('/createToken', async (req, res) => {
