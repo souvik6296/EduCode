@@ -2,7 +2,51 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
-const multer = require("multer"); 
+const multer = require("multer");
+
+const { AccessToken } = require('livekit-server-sdk');
+
+const LIVEKIT_URL = "wss://educode-190pkw3r.livekit.cloud";
+const LIVEKIT_API_KEY = "API24izSzNSuaNf";
+const LIVEKIT_API_SECRET = "uaLxHpEB5ivWwTGc9tf0t0klYzjbszqt2HMLV3aEG3S";
+const roomToStudentList = {};
+
+const createToken = async (teacherId, studentList) => {
+    // If this room doesn't exist, it'll be automatically created when the first
+    // participant joins
+    const roomName = `room${teacherId}`;
+    // Identifier to be used for participant.
+    // It's available as LocalParticipant.identity with livekit-client SDK
+    const participantName = `teacher${teacherId}`;
+
+    const at = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, {
+        identity: participantName,
+        // Token to expire after 10 minutes
+        ttl: '10m',
+    });
+    at.addGrant({ roomJoin: true, room: roomName });
+    roomToStudentList[roomName] = studentList;
+
+    return await at.toJwt();
+};
+
+const getToken = async (ID) => {
+    // Iterate over every key of roomToStudentList and check for every list if the studentId is there join the student in that room
+    for (const [roomName, studentList] of Object.entries(roomToStudentList)) {
+        if (studentList.includes(ID)) {
+            // return await createToken(roomName, [ID]);
+            const participantName = `student${ID}`;
+            const at = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, {
+                identity: participantName,
+                // Token to expire after 10 minutes
+                ttl: '10m',
+            });
+            at.addGrant({ roomJoin: true, room: roomName });
+            return await at.toJwt();
+        }
+    }
+    throw new Error('Student not found');
+};
 
 
 // Configure Multer
@@ -173,6 +217,18 @@ app.post("/courses/:courseId/units/:unitId/sub-units", handleAddSubUnit); // Add
 app.get("/courses/:courseId/units/:unitId/sub-units", handleGetSubUnits); // Fetch all sub-units of a unit
 app.put("/courses/:courseId/units/:unitId/sub-units/:subUnitId", handleUpdateSubUnit); // Update a sub-unit by ID
 app.delete("/courses/:courseId/units/:unitId/sub-units/:subUnitId", handleDeleteSubUnit); // Delete a sub-unit by ID
+
+
+app.get('/getToken', async (req, res) => {
+    const token = await getToken(req.query.ID);
+  res.status(200).send({ token });
+});
+
+app.post('/createToken', async (req, res) => {
+  const token = await createToken(req.body.ID, req.body.studentList);
+  res.status(200).send({ token });
+});
+
 
 
 // Start the Server
