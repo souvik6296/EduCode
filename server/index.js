@@ -26,17 +26,17 @@ const createToken = async (teacherId, studentList) => {
         ttl: '10m',
     });
     at.addGrant({ roomJoin: true, room: roomName });
-    const roomToStudentList = allowedStudentCache.get("roomToStudentList");
+    const roomToStudentList = allowedStudentCache[`roomToStudentList`] || {};
 
     roomToStudentList[roomName] = studentList;
-    allowedStudentCache.set("roomToStudentList", roomToStudentList);
+    allowedStudentCache[`roomToStudentList`] = roomToStudentList;
 
     return await at.toJwt();
 };
 
 const getToken = async (ID) => {
     // Iterate over every key of roomToStudentList and check for every list if the studentId is there join the student in that room
-    const roomToStudentList = allowedStudentCache.get("roomToStudentList");
+    const roomToStudentList = allowedStudentCache[`roomToStudentList`] || {};
     for (const [roomName, studentList] of Object.entries(roomToStudentList)) {
         if (studentList.includes(ID)) {
             // return await createToken(roomName, [ID]);
