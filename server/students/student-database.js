@@ -961,7 +961,7 @@ async function uploadStudentImage(imageBuffer, filename) {
 // Upload an image buffer to Supabase Storage and return the public URL
 async function uploadStudentResource(imageBuffer, filename, fileType) {
     try {
-        const bucket = "edu-code-student-resources";
+        const bucket = "educode-student-resources";
         const filePath = fileType == "pdf" ? `PDFs/${filename}` : `Videos/${filename}`;
         const contentType = detectImageMimeType(imageBuffer);
         // Upload the image to Supabase Storage
