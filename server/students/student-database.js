@@ -956,6 +956,35 @@ async function uploadStudentImage(imageBuffer, filename) {
     }
 }
 
+
+//upload student resources
+// Upload an image buffer to Supabase Storage and return the public URL
+async function uploadStudentResource(imageBuffer, filename, fileType) {
+    try {
+        const bucket = fileType=="pdf"?"edu-code-student-resources/PDFs":"edu-code-student-resources/Videos";
+        const contentType = detectImageMimeType(imageBuffer);
+        // Upload the image to Supabase Storage
+        const { data, error } = await supabaseClient.storage
+            .from(bucket)
+            .upload(filename, imageBuffer, {
+                cacheControl: '3600',
+                upsert: true,
+                contentType
+            });
+        if (error) {
+            return { success: false, message: "Failed to upload image", error };
+        }
+        // Get the public URL (fix for Supabase v2+)
+        const { data: urlData, error: urlError } = supabaseClient.storage.from(bucket).getPublicUrl(filename);
+        if (urlError || !urlData || !urlData.publicUrl) {
+            return { success: false, message: "Failed to get public URL", error: urlError };
+        }
+        return { success: true, url: urlData.publicUrl };
+    } catch (error) {
+        return { success: false, message: "Failed to upload image", error };
+    }
+}
+
 /**
  * Resume a test: save the last submissions for multiple coding or MCQ questions to Supabase
  * @param {Object} params - { student_id, course_id, unit_id, sub_unit_id, questions, question_type }
@@ -1054,5 +1083,6 @@ export {
     getTestResultStatus,
     uploadStudentImage,
     resumeTest,
-    checkTestSecurityCode
+    checkTestSecurityCode,
+    uploadStudentResource
 };

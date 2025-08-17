@@ -37,7 +37,8 @@ import {
     getTestResultStatus,
     uploadStudentImage,
     resumeTest,
-    checkTestSecurityCode
+    checkTestSecurityCode,
+    uploadStudentResource
 } from "./student-database.js";
 // Controller to check test security code
 async function handleCheckTestSecurityCode(req, res) {
@@ -402,6 +403,28 @@ async function handleUploadStudentImage(req, res) {
     }
 }
 
+
+
+// Controller to handle resource upload for student and return download URL
+async function handleUploadStudentResource(req, res) {
+    try {
+        if (!req.file || !req.file.buffer) {
+            return res.status(400).json({ success: false, message: "No resource file uploaded" });
+        }
+        const filename = req.file.originalname || `student_${Date.now()}`;
+        const fileType = req.body.fileType; // Expecting fileType to be sent in the request body
+        const result = await uploadStudentResource(req.file.buffer, filename, fileType);
+        if (result.success) {
+            res.status(200).json({ success: true, url: result.url });
+        } else {
+            res.status(500).json(result);
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Unexpected error occurred", error });
+    }
+}
+
+
 // Controller to handle resuming a test and saving last submissions
 async function handleResumeTest(req, res) {
     try {
@@ -444,4 +467,5 @@ export {
     handleResumeTest,
     handleCheckTestSecurityCode,
     handleGeminiChat,
+    handleUploadStudentResource,
 };

@@ -110,7 +110,8 @@ const {
     handleUploadStudentImage,
     handleResumeTest,
     handleCheckTestSecurityCode,
-    handleGeminiChat
+    handleGeminiChat,
+    handleUploadStudentResource
 } = require("./students/students-middle-controler.js");
 
 
@@ -200,6 +201,7 @@ app.post("/students/gemini-chat", handleGeminiChat); // Chat with Gemini AI
 
 // Route to check test security code
 app.post("/students/check-test-security", handleCheckTestSecurityCode); // Check test security code
+app.post("/students/upload-student-resource", uploadMiddleware.single("resource"), handleUploadStudentResource); // Upload student resource file
 
 // Routes for Courses
 // --------------------------------------------------------------------------------
