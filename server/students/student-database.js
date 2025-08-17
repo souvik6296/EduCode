@@ -961,12 +961,13 @@ async function uploadStudentImage(imageBuffer, filename) {
 // Upload an image buffer to Supabase Storage and return the public URL
 async function uploadStudentResource(imageBuffer, filename, fileType) {
     try {
-        const bucket = fileType=="pdf"?"edu-code-student-resources/PDFs":"edu-code-student-resources/Videos";
+        const bucket = "edu-code-student-resources";
+        const filePath = fileType == "pdf" ? `PDFs/${filename}` : `Videos/${filename}`;
         const contentType = detectImageMimeType(imageBuffer);
         // Upload the image to Supabase Storage
         const { data, error } = await supabaseClient.storage
             .from(bucket)
-            .upload(filename, imageBuffer, {
+            .upload(filePath, imageBuffer, {
                 cacheControl: '3600',
                 upsert: true,
                 contentType
