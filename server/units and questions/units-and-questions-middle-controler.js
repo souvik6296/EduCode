@@ -83,7 +83,7 @@ async function handleAddUnit(req, res) {
     try {
         const { courseId, unitData } = req.body;
         console.log(JSON.stringify(req.body)); // Expecting courseId and unitData in the request body
-        const result = await addUnit(courseId, JSON.parse(unitData));
+        const result = await addUnit(courseId, unitData);
         if (result.success) {
             res.status(201).json(result);
         } else {
