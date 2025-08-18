@@ -249,7 +249,7 @@ app.post('/createToken', async (req, res) => {
   res.status(200).send({ token });
 });
 
-app.get("/students/getStudentList/:teacherId", async (req, res) => {
+app.get("/teachers/getStudentList/:teacherId", async (req, res) => {
     const { teacherId } = req.params;
     const data = {studentList: ["UNI001", "UNI002"]};
     if (!data.success) {
