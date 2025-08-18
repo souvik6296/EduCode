@@ -959,32 +959,42 @@ async function uploadStudentImage(imageBuffer, filename) {
 
 //upload student resources
 // Upload an image buffer to Supabase Storage and return the public URL
-async function uploadStudentResource(imageBuffer, filename, fileType) {
+async function uploadStudentResource(fileBuffer, filename, fileType) {
     try {
         const bucket = "educode-student-resources";
-        const filePath = fileType == "pdf" ? `PDFs/${filename}` : `Videos/${filename}`;
-        const contentType = detectImageMimeType(imageBuffer);
-        // Upload the image to Supabase Storage
+        const filePath = fileType === "pdf" ? `PDFs/${filename}` : `Videos/${filename}`;
+
+        const contentType = fileType === "pdf" 
+            ? "application/pdf" 
+            : detectImageMimeType(fileBuffer);
+
         const { data, error } = await supabaseClient.storage
             .from(bucket)
-            .upload(filePath, imageBuffer, {
-                cacheControl: '3600',
+            .upload(filePath, fileBuffer, {
+                cacheControl: "3600",
                 upsert: true,
                 contentType
             });
+
         if (error) {
-            return { success: false, message: "Failed to upload image", error };
+            return { success: false, message: "Failed to upload file", error };
         }
-        // Get the public URL (fix for Supabase v2+)
-        const { data: urlData, error: urlError } = supabaseClient.storage.from(bucket).getPublicUrl(filename);
-        if (urlError || !urlData || !urlData.publicUrl) {
+
+        // Correct: use the same filePath to get the public URL
+        const { data: urlData, error: urlError } = supabaseClient.storage
+            .from(bucket)
+            .getPublicUrl(filePath);
+
+        if (urlError || !urlData?.publicUrl) {
             return { success: false, message: "Failed to get public URL", error: urlError };
         }
+
         return { success: true, url: urlData.publicUrl };
-    } catch (error) {
-        return { success: false, message: "Failed to upload image", error };
+    } catch (err) {
+        return { success: false, message: "Failed to upload file", error: err };
     }
 }
+
 
 /**
  * Resume a test: save the last submissions for multiple coding or MCQ questions to Supabase
