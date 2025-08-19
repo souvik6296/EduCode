@@ -973,7 +973,8 @@ async function uploadStudentResource(fileBuffer, filename, fileType) {
             .upload(filePath, fileBuffer, {
                 cacheControl: "3600",
                 upsert: true,
-                contentType
+                contentType,
+                contentDisposition: 'inline'
             });
 
         if (error) {
