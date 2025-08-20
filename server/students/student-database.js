@@ -1014,7 +1014,7 @@ async function resumeTest({ student_id, course_id, unit_id, sub_unit_id, questio
             sub_unit_id,
             question_id: q.question_id,
             last_submitted_code: q.code,
-            status: q.status,
+            status: "resumed",
             last_submission: now
         }));
         // Upsert all submissions
