@@ -248,7 +248,12 @@ async function getCourseforStudents(courseId, studentId) {
             if (unit['sub-units']) {
                 for (const subUnitId in unit['sub-units']) {
                     const subUnit = unit['sub-units'][subUnitId];
+                    let mcqCount = 0;
 
+                    if (subUnit.mcq) {
+                        mcqCount += Object.keys(subUnit.mcq).length;
+                    }
+                    subUnit.mcqCount = mcqCount;
                     // Remove 'mcq' and 'coding' keys if they exist
                     delete subUnit.mcq;
                     delete subUnit.coding;
@@ -964,8 +969,8 @@ async function uploadStudentResource(fileBuffer, filename, fileType) {
         const bucket = "educode-student-resources";
         const filePath = fileType === "pdf" ? `PDFs/${filename}` : `Videos/${filename}`;
 
-        const contentType = fileType === "pdf" 
-            ? "application/pdf" 
+        const contentType = fileType === "pdf"
+            ? "application/pdf"
             : detectImageMimeType(fileBuffer);
 
         const { data, error } = await supabaseClient.storage
