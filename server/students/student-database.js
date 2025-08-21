@@ -269,6 +269,32 @@ async function getCourseforStudents(courseId, studentId) {
                         .eq("sub_unit_id", subUnitId)
                         .single();
 
+
+                    const { data: mcqattemptData, error: mcqattemptError } = await supabaseClient
+                        .from("student_submission")
+                        .select("attempt_count")
+                        .eq("student_id", studentId)
+                        .eq("course_id", courseId)
+                        .eq("unit_id", unitId)
+                        .eq("sub_unit_id", subUnitId)
+                        .eq("result_type", "mcq");
+
+                    const mcqAttemptCount = mcqattemptError ? 0 : Number(mcqattemptData);
+
+                    const { data: codingattemptData, error: codingattemptError } = await supabaseClient
+                        .from("student_submission")
+                        .select("attempt_count")
+                        .eq("student_id", studentId)
+                        .eq("course_id", courseId)
+                        .eq("unit_id", unitId)
+                        .eq("sub_unit_id", subUnitId)
+                        .eq("result_type", "coding");
+
+                    const codingAttemptCount = codingattemptError ? 0 : Number(codingattemptData);
+
+                    subUnit.codingAttemptCount = codingAttemptCount;
+                    subUnit.mcqAttemptCount = mcqAttemptCount;
+
                     if (resumeError) {
                         console.error(`Error fetching resume data for sub-unit ${subUnitId}:`, resumeError);
                         subUnit.codingStatus = "not_started";
@@ -780,6 +806,17 @@ async function submitTest(details) {
     } = details;
     try {
         // 0. Delete previous result with same unique fields
+        const { data: attemptData, error: attemptError } = await supabaseClient
+            .from("student_submission")
+            .select("attempt_count")
+            .eq("university_id", university_id)
+            .eq("student_id", student_id)
+            .eq("course_id", course_id)
+            .eq("unit_id", unit_id)
+            .eq("sub_unit_id", sub_unit_id)
+            .eq("result_type", result_type);
+
+        const attempt_count = attemptError ? 1 : Number(attemptData) + 1;
         await supabaseClient
             .from("results")
             .delete()
@@ -801,7 +838,8 @@ async function submitTest(details) {
                 result_type,
                 marks_obtained,
                 total_marks,
-                submitted_at
+                submitted_at,
+                attempt_count
             }]);
         if (resultError) {
             return { success: false, message: "Failed to insert result", error: resultError };
