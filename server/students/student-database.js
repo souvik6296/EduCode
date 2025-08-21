@@ -295,6 +295,13 @@ async function getCourseforStudents(courseId, studentId) {
                     subUnit.codingAttemptCount = codingAttemptCount;
                     subUnit.mcqAttemptCount = mcqAttemptCount;
 
+                    if(codingattemptError){
+                        subUnit.codingattemptError = codingattemptError;
+                    }
+                    if(mcqattemptError){
+                        subUnit.mcqattemptError = mcqattemptError;
+                    }
+
                     if (resumeError) {
                         console.error(`Error fetching resume data for sub-unit ${subUnitId}:`, resumeError);
                         subUnit.codingStatus = "not_started";
