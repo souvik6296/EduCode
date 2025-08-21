@@ -271,7 +271,7 @@ async function getCourseforStudents(courseId, studentId) {
 
 
                     const { data: mcqattemptData, error: mcqattemptError } = await supabaseClient
-                        .from("student_submission")
+                        .from("results")
                         .select("attempt_count")
                         .eq("student_id", studentId)
                         .eq("course_id", courseId)
@@ -282,7 +282,7 @@ async function getCourseforStudents(courseId, studentId) {
                     const mcqAttemptCount = mcqattemptError ? 0 : Number(mcqattemptData);
 
                     const { data: codingattemptData, error: codingattemptError } = await supabaseClient
-                        .from("student_submission")
+                        .from("results")
                         .select("attempt_count")
                         .eq("student_id", studentId)
                         .eq("course_id", courseId)
