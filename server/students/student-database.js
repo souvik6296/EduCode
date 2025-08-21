@@ -279,7 +279,7 @@ async function getCourseforStudents(courseId, studentId) {
                         .eq("sub_unit_id", subUnitId)
                         .eq("result_type", "mcq");
 
-                    const mcqAttemptCount = mcqattemptError ? 0 : Number(mcqattemptData);
+                    const mcqAttemptCount = Number(mcqattemptData[0]?.attempt_count || 0);
 
                     const { data: codingattemptData, error: codingattemptError } = await supabaseClient
                         .from("results")
@@ -290,18 +290,12 @@ async function getCourseforStudents(courseId, studentId) {
                         .eq("sub_unit_id", subUnitId)
                         .eq("result_type", "coding");
 
-                    const codingAttemptCount = codingattemptError ? 0 : Number(codingattemptData);
+                    const codingAttemptCount = Number(codingattemptData[0]?.attempt_count || 0);
 
-                    subUnit.mcqAttemptData = mcqattemptData;
                     subUnit.codingAttemptCount = codingAttemptCount;
                     subUnit.mcqAttemptCount = mcqAttemptCount;
 
-                    if(codingattemptError){
-                        subUnit.codingattemptError = codingattemptError;
-                    }
-                    if(mcqattemptError){
-                        subUnit.mcqattemptError = mcqattemptError;
-                    }
+
 
                     if (resumeError) {
                         console.error(`Error fetching resume data for sub-unit ${subUnitId}:`, resumeError);
