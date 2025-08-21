@@ -292,6 +292,7 @@ async function getCourseforStudents(courseId, studentId) {
 
                     const codingAttemptCount = codingattemptError ? 0 : Number(codingattemptData);
 
+                    subUnit.mcqAttemptData = mcqattemptData;
                     subUnit.codingAttemptCount = codingAttemptCount;
                     subUnit.mcqAttemptCount = mcqAttemptCount;
 
