@@ -1093,6 +1093,35 @@ async function resumeTest({ student_id, course_id, unit_id, sub_unit_id, questio
         return { success: false, message: "Unexpected error occurred", error };
     }
 }
+async function saveMCQSubmission({ student_id, course_id, unit_id, sub_unit_id, questions, question_type }) {
+    try {
+        // Prepare payloads for all questions
+        const now = new Date().toISOString();
+        const payloads = questions.map(q => ({
+            student_id,
+            course_id,
+            unit_id,
+            sub_unit_id,
+            question_id: q.question_id,
+            last_submitted_code: q.code,
+            status: "submitted",
+            last_submission: now
+        }));
+        // Upsert all submissions
+        const { data, error } = await supabaseClient
+            .from('student_submission')
+            .upsert(payloads, {
+                onConflict: ['student_id', 'course_id', 'unit_id', 'sub_unit_id', 'question_id']
+            })
+            .select();
+        if (error) {
+            return { success: false, message: "Failed to save last submissions", error };
+        }
+        return { success: true, message: "MCQ last submissions saved", data };
+    } catch (error) {
+        return { success: false, message: "Unexpected error occurred", error };
+    }
+}
 
 
 
@@ -1141,5 +1170,6 @@ export {
     uploadStudentImage,
     resumeTest,
     checkTestSecurityCode,
-    uploadStudentResource
+    uploadStudentResource,
+    saveMCQSubmission
 };
