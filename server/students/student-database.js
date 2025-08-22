@@ -818,7 +818,7 @@ async function submitTest(details) {
             .eq("sub_unit_id", sub_unit_id)
             .eq("result_type", result_type);
 
-        const attempt_count = (attemptError || !attemptData.attempt_count) ? 1 : Number(attemptData.attempt_count) + 1;
+        const attempt_count = (attemptError || !attemptData[0].attempt_count) ? 1 : Number(attemptData[0].attempt_count) + 1;
         await supabaseClient
             .from("results")
             .delete()
