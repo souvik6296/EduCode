@@ -809,7 +809,7 @@ async function submitTest(details) {
     try {
         // 0. Delete previous result with same unique fields
         const { data: attemptData, error: attemptError } = await supabaseClient
-            .from("student_submission")
+            .from("results")
             .select("attempt_count")
             .eq("university_id", university_id)
             .eq("student_id", student_id)
