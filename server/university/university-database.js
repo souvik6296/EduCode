@@ -7,42 +7,75 @@ import fs from 'fs';
 
 
 // Function to upload students from an Excel file
+// async function uploadStudentsExcel(file, batchId, universityId) {
+//     try {
+//         const filePath = file.path;
+
+//         // Read the Excel file
+//         const workbook = xlsx.readFile(filePath);
+//         const sheet = workbook.Sheets[workbook.SheetNames[0]];
+//         const data = xlsx.utils.sheet_to_json(sheet);
+
+//         // Add batch_id and university_id to each student record
+//         const enrichedData = data.map(student => ({
+//             ...student,
+//             batch_id: batchId,
+//             university_id: universityId
+//         }));
+
+//         // Delete the file after processing
+//         fs.unlinkSync(filePath);
+
+//         // Insert data into the 'students' table
+//         const { data: insertedData, error } = await supabaseClient
+//             .from("students")
+//             .insert(enrichedData);
+
+//         if (error) {
+//             console.error("Error inserting students from Excel:", error);
+//             return { success: false, message: "Failed to insert students from Excel", error };
+//         }
+
+//         console.log("Students inserted successfully:", insertedData);
+//         return { success: true, message: "Students inserted successfully", data: insertedData };
+//     } catch (err) {
+//         console.error("Unexpected error during Excel upload:", err);
+//         return { success: false, message: "Unexpected error occurred during Excel upload", error: err };
+//     }
+// }
+
 async function uploadStudentsExcel(file, batchId, universityId) {
-    try {
-        const filePath = file.path;
+  try {
+    // Read the Excel file from buffer
+    const workbook = xlsx.read(file.buffer, { type: "buffer" });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const data = xlsx.utils.sheet_to_json(sheet);
 
-        // Read the Excel file
-        const workbook = xlsx.readFile(filePath);
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const data = xlsx.utils.sheet_to_json(sheet);
+    // Add batch_id and university_id to each student record
+    const enrichedData = data.map(student => ({
+      ...student,
+      batch_id: batchId,
+      university_id: universityId,
+    }));
 
-        // Add batch_id and university_id to each student record
-        const enrichedData = data.map(student => ({
-            ...student,
-            batch_id: batchId,
-            university_id: universityId
-        }));
+    // Insert data into the 'students' table
+    const { data: insertedData, error } = await supabaseClient
+      .from("students")
+      .insert(enrichedData);
 
-        // Delete the file after processing
-        fs.unlinkSync(filePath);
-
-        // Insert data into the 'students' table
-        const { data: insertedData, error } = await supabaseClient
-            .from("students")
-            .insert(enrichedData);
-
-        if (error) {
-            console.error("Error inserting students from Excel:", error);
-            return { success: false, message: "Failed to insert students from Excel", error };
-        }
-
-        console.log("Students inserted successfully:", insertedData);
-        return { success: true, message: "Students inserted successfully", data: insertedData };
-    } catch (err) {
-        console.error("Unexpected error during Excel upload:", err);
-        return { success: false, message: "Unexpected error occurred during Excel upload", error: err };
+    if (error) {
+      console.error("Error inserting students from Excel:", error);
+      return { success: false, message: "Failed to insert students from Excel", error };
     }
+
+    console.log("Students inserted successfully:", insertedData);
+    return { success: true, message: "Students inserted successfully", data: insertedData };
+  } catch (err) {
+    console.error("Unexpected error during Excel upload:", err);
+    return { success: false, message: "Unexpected error occurred during Excel upload", error: err };
+  }
 }
+
 
 
 
