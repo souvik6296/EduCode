@@ -55,7 +55,7 @@ async function uploadStudentsExcel(file, batchId, universityId) {
     const enrichedData = data.map(student => ({
       ...student,
       batch_id: batchId,
-      university_id: universityId,
+      uni_id: universityId,
     }));
 
     // Insert data into the 'students' table
