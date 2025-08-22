@@ -1,7 +1,8 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // Gemini API configuration
-const GEMINI_API_KEY = "AIzaSyClNvwygY7QhdVUYfuKTzC5YBW2-o3Myp8";
+// const GEMINI_API_KEY = "AIzaSyClNvwygY7QhdVUYfuKTzC5YBW2-o3Myp8";
+const GEMINI_API_KEY = "AIzaSyAJvUFyBAYRwohGslYi-zlfstVmwXp1xJ0";
 const MODEL_NAME = "gemini-1.5-flash";
 
 // In-memory session store (for demo; use persistent store for production)
