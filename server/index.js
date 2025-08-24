@@ -275,17 +275,19 @@ app.post("/startRecording", async (req, res) => {
     const formattedDate = `${dd}-${mm}-${yyyy}`;
 
     const output = new DirectFileOutput({
-        file: {
+        filepath: `recordings/${formattedDate}/${roomName.replace('teacher', '')}/${participantId}.mp4`,
+        output: {
+
             case: 's3',
             value: {
-                bucket: "studentrecording",
-                key: `recordings/${formattedDate}/${roomName.replace('teacher', '')}/${participantId}.mp4`,
-                region: "ap-southeast-1",
                 accessKey: "8FJTMT9D7XWGDTW9SA0D",
                 secret: "AmRqRjbDMzVfdf5goRCYBjLtChNhYDBziYOzpl4R",
+                region: "ap-southeast-1",
                 endpoint: "s3.ap-southeast-1.wasabisys.com", // region-specific
-            },
-        },
+                bucket: "studentrecording",
+            }
+        }
+
     });
 
 
