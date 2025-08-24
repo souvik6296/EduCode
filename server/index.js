@@ -285,6 +285,7 @@ app.post("/startRecording", async (req, res) => {
                 region: "ap-southeast-1",
                 endpoint: "s3.ap-southeast-1.wasabisys.com", // region-specific
                 bucket: "studentrecording",
+                forcePathStyle: true
             }
         }
 
