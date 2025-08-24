@@ -269,23 +269,24 @@ app.post("/startRecording", async (req, res) => {
     const today = new Date();
 
     const dd = String(today.getDate()).padStart(2, '0');
-    const mm = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-based  
+    const mm = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-based
     const yyyy = today.getFullYear();
 
     const formattedDate = `${dd}-${mm}-${yyyy}`;
 
     try {
         const egressInfo = await egressClient.startTrackEgress({
-            roomName,
-            participantIdentity: participantId,
+            room_name: roomName,                   // ✅ must be snake_case
+            participant_identity: participantId,   // ✅ must be snake_case
 
-            s3Output: {
+            // If using S3/Wasabi output
+            s3: {
                 bucket: "studentrecording",
                 key: `recordings/${formattedDate}/${roomName.replace('teacher', '')}/${participantId}.mp4`,
-                region: "ap-southeast-1", // change to your Wasabi region
-                accessKey: "8FJTMT9D7XWGDTW9SA0D",
+                region: "ap-southeast-1",
+                access_key: "8FJTMT9D7XWGDTW9SA0D",
                 secret: "AmRqRjbDMzVfdf5goRCYBjLtChNhYDBziYOzpl4R",
-                endpoint: "s3.ap-southeast-1.wasabisys.com", // Wasabi endpoint
+                endpoint: "s3.ap-southeast-1.wasabisys.com",
             },
         });
 
@@ -295,6 +296,7 @@ app.post("/startRecording", async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
 
 app.post("/stopRecording", async (req, res) => {
     const { egressId } = req.body;
