@@ -274,7 +274,7 @@ app.post("/startRecording", async (req, res) => {
 
     const formattedDate = `${dd}-${mm}-${yyyy}`;
 
-    const output = {
+    const output = new EncodedFileOutput({
         file: {
             case: 's3',
             value: {
@@ -286,7 +286,7 @@ app.post("/startRecording", async (req, res) => {
                 endpoint: "s3.ap-southeast-1.wasabisys.com", // region-specific
             },
         },
-    };
+    });
 
 
 
