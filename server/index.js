@@ -282,6 +282,7 @@ app.post("/startRecording", async (req, res) => {
             value: {
                 accessKey: "8FJTMT9D7XWGDTW9SA0D",
                 secret: "AmRqRjbDMzVfdf5goRCYBjLtChNhYDBziYOzpl4R",
+                region: "ap-southeast-1",
                 endpoint: "s3.ap-southeast-1.wasabisys.com", // region-specific
                 bucket: "studentrecording",
                 forcePathStyle: true
@@ -312,6 +313,17 @@ app.post("/stopRecording", async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
+app.get("/getegress/:egressId", async (req, res) => {
+    const { egressId } = req.params;
+    try {
+        const egressInfo = await egressClient.getEgress(egressId);
+        res.json(egressInfo);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 
 // Start the Server
 // --------------------------------------------------------------------------------
