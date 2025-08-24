@@ -283,7 +283,7 @@ app.post("/startRecording", async (req, res) => {
                 accessKey: "8FJTMT9D7XWGDTW9SA0D",
                 secret: "AmRqRjbDMzVfdf5goRCYBjLtChNhYDBziYOzpl4R",
                 region: "ap-southeast-1",
-                endpoint: "s3.ap-southeast-1.wasabisys.com", // region-specific
+                endpoint: "https://s3.ap-southeast-1.wasabisys.com", // region-specific
                 bucket: "studentrecording",
                 forcePathStyle: true
             }
