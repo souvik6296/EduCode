@@ -274,7 +274,7 @@ app.post("/startRecording", async (req, res) => {
 
     const formattedDate = `${dd}-${mm}-${yyyy}`;
 
-    const outputs = {
+    const output = {
         file: {
             case: 's3',
             value: {
@@ -291,7 +291,7 @@ app.post("/startRecording", async (req, res) => {
 
 
     try {
-        const egressInfo = await egressClient.startTrackEgress(roomName, outputs, participantId);
+        const egressInfo = await egressClient.startTrackEgress(roomName, output, participantId);
 
         res.send(egressInfo);
     } catch (err) {
