@@ -4,7 +4,7 @@ const cors = require("cors");
 const path = require("path");
 const multer = require("multer");
 
-const { AccessToken, EgressClient } = require('livekit-server-sdk');
+const { AccessToken, EgressClient, EncodedFileOutput } = require('livekit-server-sdk');
 
 const LIVEKIT_URL = "wss://educode-190pkw3r.livekit.cloud";
 const LIVEKIT_API_KEY = "API24izSzNSuaNf";
@@ -291,7 +291,7 @@ app.post("/startRecording", async (req, res) => {
 
 
     try {
-        const egressInfo = await egressClient.startParticipantEgress(roomName, participantId, output);
+        const egressInfo = await egressClient.startParticipantEgress(roomName, participantId, EncodedFileOutput(output));
 
         res.send(egressInfo);
     } catch (err) {
