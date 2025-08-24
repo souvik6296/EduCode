@@ -4,13 +4,15 @@ const cors = require("cors");
 const path = require("path");
 const multer = require("multer");
 
-const { AccessToken } = require('livekit-server-sdk');
+const { AccessToken, EgressClient } = require('livekit-server-sdk');
 
 const LIVEKIT_URL = "wss://educode-190pkw3r.livekit.cloud";
 const LIVEKIT_API_KEY = "API24izSzNSuaNf";
 const LIVEKIT_API_SECRET = "uaLxHpEB5ivWwTGc9tf0t0klYzjbszqt2HMLV3aEG3S";
 // const roomToStudentList = {};
 const allowedStudentCache = require("./allowedStudentCache.js");
+
+const egressClient = new EgressClient(LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET);
 
 const createToken = async (teacherId, studentList) => {
     // If this room doesn't exist, it'll be automatically created when the first
@@ -241,23 +243,66 @@ app.get('/getToken', async (req, res) => {
     const data = await getToken(req.query.ID);
     if (!data.success) {
         return res.status(400).send(data);
-    }else if (data.success) {
+    } else if (data.success) {
         return res.status(200).send(data);
     }
 });
 
 app.post('/createToken', async (req, res) => {
-  const token = await createToken(req.body.ID, req.body.studentList);
-  res.status(200).send({ token });
+    const token = await createToken(req.body.ID, req.body.studentList);
+    res.status(200).send({ token });
 });
 
 app.get("/teachers/getStudentList/:teacherId", async (req, res) => {
     const { teacherId } = req.params;
-    const data = {studentList: ["UNI001", "UNI002", "UNI005", "12345678", "12345679", "12345680", "12345681", "12345682"]};
+    const data = { studentList: ["UNI001", "UNI002", "UNI005", "12345678", "12345679", "12345680", "12345681", "12345682"] };
     if (!data.success) {
         return res.status(400).send(data);
     } else if (data.success) {
         return res.status(200).send(data);
+    }
+});
+
+
+app.post("/startRecording", async (req, res) => {
+    const { roomName, participantId } = req.body;
+    const today = new Date();
+
+    const dd = String(today.getDate()).padStart(2, '0');
+    const mm = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-based  
+    const yyyy = today.getFullYear();
+
+    const formattedDate = `${dd}-${mm}-${yyyy}`;
+
+    try {
+        const egressInfo = await egressClient.startTrackEgress({
+            roomName,
+            participantIdentity: participantId,
+
+            s3Output: {
+                bucket: "studentrecording",
+                key: `recordings/${formattedDate}/${roomName.replace('teacher', '')}/${participantId}.mp4`,
+                region: "ap-southeast-1", // change to your Wasabi region
+                accessKey: "8FJTMT9D7XWGDTW9SA0D",
+                secret: "AmRqRjbDMzVfdf5goRCYBjLtChNhYDBziYOzpl4R",
+                endpoint: "s3.ap-southeast-1.wasabisys.com", // Wasabi endpoint
+            },
+        });
+
+        res.json({ egressId: egressInfo.egressId });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post("/stopRecording", async (req, res) => {
+    const { egressId } = req.body;
+    try {
+        await egressClient.stopEgress(egressId);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
