@@ -291,7 +291,7 @@ app.post("/startRecording", async (req, res) => {
 
 
     try {
-        const egressInfo = await egressClient.startParticipantEgress(roomName, participantId, EncodedFileOutput(output));
+        const egressInfo = await egressClient.startParticipantEgress(roomName, participantId, output);
 
         res.send(egressInfo);
     } catch (err) {
