@@ -274,23 +274,26 @@ app.post("/startRecording", async (req, res) => {
 
     const formattedDate = `${dd}-${mm}-${yyyy}`;
 
-    try {
-        const egressInfo = await egressClient.startTrackEgress({
-            room: roomName,                   // ✅ must be snake_case
-            participant_identity: participantId,   // ✅ must be snake_case
-
-            // If using S3/Wasabi output
-            s3: {
+    const outputs = {
+        file: {
+            case: 's3',
+            value: {
                 bucket: "studentrecording",
                 key: `recordings/${formattedDate}/${roomName.replace('teacher', '')}/${participantId}.mp4`,
                 region: "ap-southeast-1",
-                access_key: "8FJTMT9D7XWGDTW9SA0D",
+                accessKey: "8FJTMT9D7XWGDTW9SA0D",
                 secret: "AmRqRjbDMzVfdf5goRCYBjLtChNhYDBziYOzpl4R",
-                endpoint: "s3.ap-southeast-1.wasabisys.com",
+                endpoint: "s3.ap-southeast-1.wasabisys.com", // region-specific
             },
-        });
+        },
+    };
 
-        res.send( egressInfo );
+
+
+    try {
+        const egressInfo = await egressClient.startTrackEgress(roomName, outputs, participantId);
+
+        res.send(egressInfo);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message });
