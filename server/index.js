@@ -276,7 +276,7 @@ app.post("/startRecording", async (req, res) => {
 
     try {
         const egressInfo = await egressClient.startTrackEgress({
-            room_name: roomName,                   // ✅ must be snake_case
+            room: roomName,                   // ✅ must be snake_case
             participant_identity: participantId,   // ✅ must be snake_case
 
             // If using S3/Wasabi output
