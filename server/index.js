@@ -317,7 +317,7 @@ app.post("/stopRecording", async (req, res) => {
 app.get("/getegress/:egressId", async (req, res) => {
     const { egressId } = req.params;
     try {
-        const egressInfo = await egressClient.getEgress(egressId);
+        const egressInfo = await egressClient.listEgress();
         res.json(egressInfo);
     } catch (err) {
         res.status(500).json({ error: err.message });
