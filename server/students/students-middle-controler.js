@@ -18,7 +18,10 @@ async function verifyStudentSession(token, studentId){
     if (validToken.exists() && validToken.val() == token) {
         return true;
     }
-    console.error(`Invalid token ${token}  && ${validToken}`);
+    if(!validToken.exists()){
+        console.error(`No token found for student ${studentId}`);
+    }
+    console.error(`Invalid token ${token}  && ${validToken.val()}`);
     return false;
 }
 
