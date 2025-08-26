@@ -201,7 +201,7 @@ async function loginStudent(userId, password) {
 }
 
 async function verifyStudentSession(token, studentId){
-    const sref = ref(`EduCode/Students/${studentId}`);
+    const sref = ref(db, `EduCode/Students/${studentId}`);
     const validToken = await get(sref);
     if (validToken !== token) {
         console.error("Invalid token");
