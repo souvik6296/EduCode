@@ -1,8 +1,41 @@
 const { chatWithGemini } = require("./gemini-ai.js");
+import { getDatabase, ref, set, push, update, remove, get, child } from "firebase/database";
+// import app from "../firebase-config.js";
+import { initializeApp } from "firebase/app";
+// Firebase configuration
+const firebaseConfig = {
+    databaseURL: "https://ai-projects-d261b-default-rtdb.firebaseio.com/"
+};
+const firebaseApp = initializeApp(firebaseConfig);
+
+const db = getDatabase(firebaseApp);
+
+
+
+async function verifyStudentSession(token, studentId) {
+    const ref = db.ref(`EduCode/Students/${studentId}`);
+    const validToken = await get(ref);
+    if (validToken !== token) {
+        console.error("Invalid token");
+        return false;
+    }
+    return true;
+}
+
+
+
 
 // Middleware to handle Gemini chatbot requests
 async function handleGeminiChat(req, res) {
     try {
+
+        const token = req.headers['authorization'].split(' ')[1]; // Bearer token
+        const studentId = req.headers['studentid'];      // custom header
+        const isValidSession = await verifyStudentSession(token, studentId);
+        if (!isValidSession) {
+            return res.status(401).json({ session_expired: true, success: false, message: "Invalid or expired session. Please log in again." });
+        }
+
         const { query, sessionId, question_details } = req.body;
         if (!query) {
             return res.status(400).json({ success: false, message: "Missing query in request body" });
@@ -26,6 +59,7 @@ import {
     updateStudent,
     deleteStudent,
     loginStudent,
+    verifyStudent,
     getCourseMetadataByBatchId,
     getCourseforStudents,
     getQuestionforStudent,
@@ -44,6 +78,13 @@ import {
 // Controller to check test security code
 async function handleCheckTestSecurityCode(req, res) {
     try {
+        const token = req.headers['authorization'].split(' ')[1]; // Bearer token
+        const studentId = req.headers['studentid'];      // custom header
+        const isValidSession = await verifyStudentSession(token, studentId);
+        if (!isValidSession) {
+            return res.status(401).json({ session_expired: true, success: false, message: "Invalid or expired session. Please log in again." });
+        }
+
         const { courseId, unitId, subUnitId, securityCode } = req.body;
         if (!courseId || !unitId || !subUnitId || !securityCode) {
             return res.status(400).json({ success: false, message: "Missing required fields: courseId, unitId, subUnitId, or securityCode" });
@@ -58,6 +99,13 @@ async function handleCheckTestSecurityCode(req, res) {
 // Controller to handle inserting a new student
 async function handleInsertStudent(req, res) {
     try {
+        const token = req.headers['authorization'].split(' ')[1]; // Bearer token
+        const studentId = req.headers['studentid'];      // custom header
+        const isValidSession = await verifyStudentSession(token, studentId);
+        if (!isValidSession) {
+            return res.status(401).json({ session_expired: true, success: false, message: "Invalid or expired session. Please log in again." });
+        }
+
         const student = req.body; // Assuming the student data is sent in the request body
         const result = await insertStudent(student);
         if (result.success) {
@@ -74,6 +122,13 @@ async function handleInsertStudent(req, res) {
 // Controller to handle fetching all students
 async function handleGetAllStudents(req, res) {
     try {
+        const token = req.headers['authorization'].split(' ')[1]; // Bearer token
+        const studentId = req.headers['studentid'];      // custom header
+        const isValidSession = await verifyStudentSession(token, studentId);
+        if (!isValidSession) {
+            return res.status(401).json({ session_expired: true, success: false, message: "Invalid or expired session. Please log in again." });
+        }
+
         const result = await getAllStudents();
         if (result.success) {
             res.status(200).json(result);
@@ -89,6 +144,13 @@ async function handleGetAllStudents(req, res) {
 // Controller to handle fetching a student by student ID
 async function handleGetStudentById(req, res) {
     try {
+        const token = req.headers['authorization'].split(' ')[1]; // Bearer token
+        const sid = req.headers['studentid'];      // custom header
+        const isValidSession = await verifyStudentSession(token, sid);
+        if (!isValidSession) {
+            return res.status(401).json({ session_expired: true, success: false, message: "Invalid or expired session. Please log in again." });
+        }
+
         const { studentId } = req.params; // Assuming the student ID is sent as a URL parameter
         const result = await getStudentById(studentId);
         if (result.success) {
@@ -105,6 +167,12 @@ async function handleGetStudentById(req, res) {
 // Controller to handle fetching students by university ID
 async function handleGetStudentsByUniversityId(req, res) {
     try {
+        const token = req.headers['authorization'].split(' ')[1]; // Bearer token
+        const sid = req.headers['studentid'];      // custom header
+        const isValidSession = await verifyStudentSession(token, sid);
+        if (!isValidSession) {
+            return res.status(401).json({ session_expired: true, success: false, message: "Invalid or expired session. Please log in again." });
+        }
         const { uniId } = req.params; // Assuming the university ID is sent as a URL parameter
         const result = await getStudentsByUniversityId(uniId);
         if (result.success) {
@@ -121,6 +189,12 @@ async function handleGetStudentsByUniversityId(req, res) {
 // Controller to handle fetching students by batch ID
 async function handleGetStudentsByBatchId(req, res) {
     try {
+        const token = req.headers['authorization'].split(' ')[1]; // Bearer token
+        const sid = req.headers['studentid'];      // custom header
+        const isValidSession = await verifyStudentSession(token, sid);
+        if (!isValidSession) {
+            return res.status(401).json({ session_expired: true, success: false, message: "Invalid or expired session. Please log in again." });
+        }
         const { batchId } = req.params; // Assuming the batch ID is sent as a URL parameter
         const result = await getStudentsByBatchId(batchId);
         if (result.success) {
@@ -137,6 +211,12 @@ async function handleGetStudentsByBatchId(req, res) {
 // Controller to handle updating a student
 async function handleUpdateStudent(req, res) {
     try {
+        const token = req.headers['authorization'].split(' ')[1]; // Bearer token
+        const sid = req.headers['studentid'];      // custom header
+        const isValidSession = await verifyStudentSession(token, sid);
+        if (!isValidSession) {
+            return res.status(401).json({ session_expired: true, success: false, message: "Invalid or expired session. Please log in again." });
+        }
         const { studentId } = req.params; // Assuming the student ID is sent as a URL parameter
         const fieldsToUpdate = req.body; // Assuming the fields to update are sent in the request body
         const result = await updateStudent(studentId, fieldsToUpdate);
@@ -154,6 +234,12 @@ async function handleUpdateStudent(req, res) {
 // Controller to handle deleting a student
 async function handleDeleteStudent(req, res) {
     try {
+        const token = req.headers['authorization'].split(' ')[1]; // Bearer token
+        const sid = req.headers['studentid'];      // custom header
+        const isValidSession = await verifyStudentSession(token, sid);
+        if (!isValidSession) {
+            return res.status(401).json({ session_expired: true, success: false, message: "Invalid or expired session. Please log in again." });
+        }
         const { studentId } = req.params; // Assuming the student ID is sent as a URL parameter
         const result = await deleteStudent(studentId);
         if (result.success) {
@@ -183,9 +269,34 @@ async function handleStudentLogin(req, res) {
     }
 }
 
+
+async function handleVerifyStudent(req, res) {
+    try {
+
+        // Assuming the token and student ID are sent in the request body
+        const token = req.headers['authorization'].split(' ')[1]; // Bearer token
+        const studentId = req.headers['studentid'];      // custom header
+        const result = await verifyStudent(token, studentId);
+        if (result) {
+            res.status(200).json(result);
+        } else {
+            res.status(401).json(result);
+        }
+    } catch (error) {
+        console.error("Error in handleVerifyStudent:", error);
+        res.status(500).json({ success: false, message: "Unexpected error occurred", error });
+    }
+}
+
 // Controller to handle fetching course metadata by batch ID
 async function handleGetCourseMetadataByBatchId(req, res) {
     try {
+        const token = req.headers['authorization'].split(' ')[1]; // Bearer token
+        const sid = req.headers['studentid'];      // custom header
+        const isValidSession = await verifyStudentSession(token, sid);
+        if (!isValidSession) {
+            return res.status(401).json({ session_expired: true, success: false, message: "Invalid or expired session. Please log in again." });
+        }
         const { batchId } = req.params; // Assuming the batch ID is sent as a URL parameter
         const result = await getCourseMetadataByBatchId(batchId);
         if (result.success) {
@@ -202,6 +313,12 @@ async function handleGetCourseMetadataByBatchId(req, res) {
 // Controller to handle fetching a course by course ID
 async function handleGetCourseforStudents(req, res) {
     try {
+        const token = req.headers['authorization'].split(' ')[1]; // Bearer token
+        const sid = req.headers['studentid'];      // custom header
+        const isValidSession = await verifyStudentSession(token, sid);
+        if (!isValidSession) {
+            return res.status(401).json({ session_expired: true, success: false, message: "Invalid or expired session. Please log in again." });
+        }
         const { courseId, studentId } = req.body; // Expecting courseId and studentId as URL parameters
         const result = await getCourseforStudents(courseId, studentId);
         if (result.success) {
@@ -220,6 +337,12 @@ async function handleGetCourseforStudents(req, res) {
 // Controller to handle fetching questions for a student
 async function handleGetQuestionforStudent(req, res) {
     try {
+        const token = req.headers['authorization'].split(' ')[1]; // Bearer token
+        const sid = req.headers['studentid'];      // custom header
+        const isValidSession = await verifyStudentSession(token, sid);
+        if (!isValidSession) {
+            return res.status(401).json({ session_expired: true, success: false, message: "Invalid or expired session. Please log in again." });
+        }
         const { courseId, unitId, subUnitId, studentId, questionType } = req.body; // Extract parameters from the request body
 
         // Validate required parameters
@@ -246,6 +369,12 @@ async function handleGetQuestionforStudent(req, res) {
 // Controller to handle compiling and running code
 async function handleCompileAndRun(req, res) {
     try {
+        const token = req.headers['authorization'].split(' ')[1]; // Bearer token
+        const sid = req.headers['studentid'];      // custom header
+        const isValidSession = await verifyStudentSession(token, sid);
+        if (!isValidSession) {
+            return res.status(401).json({ session_expired: true, success: false, message: "Invalid or expired session. Please log in again." });
+        }
         const { userWrittenCode, languageId, sampleInputOutput, courseId, unitId, subUnitId, questionId, studentId } = req.body;
 
         // Validate required parameters
@@ -273,6 +402,12 @@ async function handleCompileAndRun(req, res) {
 // Controller to handle submitting and compiling code
 async function handleSubmitAndCompile(req, res) {
     try {
+        const token = req.headers['authorization'].split(' ')[1]; // Bearer token
+        const sid = req.headers['studentid'];      // custom header
+        const isValidSession = await verifyStudentSession(token, sid);
+        if (!isValidSession) {
+            return res.status(401).json({ session_expired: true, success: false, message: "Invalid or expired session. Please log in again." });
+        }
         const { userWrittenCode, languageId, courseId, unitId, subUnitId, questionId, studentId } = req.body;
 
         // Validate required parameters
@@ -300,6 +435,12 @@ async function handleSubmitAndCompile(req, res) {
 // Controller to handle submitting test and updating resume
 async function handleSubmitTest(req, res) {
     try {
+        const token = req.headers['authorization'].split(' ')[1]; // Bearer token
+        const sid = req.headers['studentid'];      // custom header
+        const isValidSession = await verifyStudentSession(token, sid);
+        if (!isValidSession) {
+            return res.status(401).json({ session_expired: true, success: false, message: "Invalid or expired session. Please log in again." });
+        }
         const details = req.body;
         // Validate required fields
         const requiredFields = [
@@ -310,7 +451,7 @@ async function handleSubmitTest(req, res) {
                 return res.status(400).json({ success: false, message: `Missing required field: ${field}` });
             }
         }
-        if(!details.score){
+        if (!details.score) {
             details.score = 0; // Default score if not provided
         }
         const result = await submitTest(details);
@@ -327,6 +468,12 @@ async function handleSubmitTest(req, res) {
 // Controller to handle fetching student profile by student_id
 async function handleGetStudentProfile(req, res) {
     try {
+        const token = req.headers['authorization'].split(' ')[1]; // Bearer token
+        const sid = req.headers['studentid'];      // custom header
+        const isValidSession = await verifyStudentSession(token, sid);
+        if (!isValidSession) {
+            return res.status(401).json({ session_expired: true, success: false, message: "Invalid or expired session. Please log in again." });
+        }
         const { studentId } = req.query;
         if (!studentId) {
             return res.status(400).json({ success: false, message: "Missing required parameter: studentId" });
@@ -345,6 +492,12 @@ async function handleGetStudentProfile(req, res) {
 // Controller to handle updating any number of fields for a student
 async function handleUpdateStudentFields(req, res) {
     try {
+        const token = req.headers['authorization'].split(' ')[1]; // Bearer token
+        const sid = req.headers['studentid'];      // custom header
+        const isValidSession = await verifyStudentSession(token, sid);
+        if (!isValidSession) {
+            return res.status(401).json({ session_expired: true, success: false, message: "Invalid or expired session. Please log in again." });
+        }
         const { studentId } = req.params;
         const fieldsToUpdate = req.body;
         if (!studentId || !fieldsToUpdate || Object.keys(fieldsToUpdate).length === 0) {
@@ -364,6 +517,12 @@ async function handleUpdateStudentFields(req, res) {
 // Controller to handle fetching test result status and summary
 async function handleGetTestResultStatus(req, res) {
     try {
+        const token = req.headers['authorization'].split(' ')[1]; // Bearer token
+        const sid = req.headers['studentid'];      // custom header
+        const isValidSession = await verifyStudentSession(token, sid);
+        if (!isValidSession) {
+            return res.status(401).json({ session_expired: true, success: false, message: "Invalid or expired session. Please log in again." });
+        }
         const { university_id, student_id, course_id, unit_id, sub_unit_id, result_type } = req.body;
         // Validate required fields
         const requiredFields = [
@@ -389,6 +548,12 @@ async function handleGetTestResultStatus(req, res) {
 // Controller to handle image upload for student and return download URL
 async function handleUploadStudentImage(req, res) {
     try {
+        const token = req.headers['authorization'].split(' ')[1]; // Bearer token
+        const sid = req.headers['studentid'];      // custom header
+        const isValidSession = await verifyStudentSession(token, sid);
+        if (!isValidSession) {
+            return res.status(401).json({ session_expired: true, success: false, message: "Invalid or expired session. Please log in again." });
+        }
         if (!req.file || !req.file.buffer) {
             return res.status(400).json({ success: false, message: "No image file uploaded" });
         }
@@ -409,6 +574,12 @@ async function handleUploadStudentImage(req, res) {
 // Controller to handle resource upload for student and return download URL
 async function handleUploadStudentResource(req, res) {
     try {
+        const token = req.headers['authorization'].split(' ')[1]; // Bearer token
+        const sid = req.headers['studentid'];      // custom header
+        const isValidSession = await verifyStudentSession(token, sid);
+        if (!isValidSession) {
+            return res.status(401).json({ session_expired: true, success: false, message: "Invalid or expired session. Please log in again." });
+        }
         if (!req.file || !req.file.buffer) {
             return res.status(400).json({ success: false, message: "No resource file uploaded" });
         }
@@ -429,12 +600,18 @@ async function handleUploadStudentResource(req, res) {
 // Controller to handle resuming a test and saving last submissions
 async function handleResumeTest(req, res) {
     try {
+        const token = req.headers['authorization'].split(' ')[1]; // Bearer token
+        const sid = req.headers['studentid'];      // custom header
+        const isValidSession = await verifyStudentSession(token, sid);
+        if (!isValidSession) {
+            return res.status(401).json({ session_expired: true, success: false, message: "Invalid or expired session. Please log in again." });
+        }
         const { student_id, course_id, unit_id, sub_unit_id, questions, question_type } = req.body;
         // Validate required fields
         if (!student_id || !course_id || !unit_id || !sub_unit_id || !Array.isArray(questions) || !question_type) {
             return res.status(400).json({ success: false, message: "Missing required fields: student_id, course_id, unit_id, sub_unit_id, questions (array), or question_type" });
         }
-        const result = await resumeTest({ student_id, course_id, unit_id, sub_unit_id, questions, question_type});
+        const result = await resumeTest({ student_id, course_id, unit_id, sub_unit_id, questions, question_type });
         if (result.success) {
             res.status(200).json(result);
         } else {
@@ -449,12 +626,18 @@ async function handleResumeTest(req, res) {
 // Controller to handle resuming a test and saving last submissions
 async function handleSaveMCQSubmission(req, res) {
     try {
+        const token = req.headers['authorization'].split(' ')[1]; // Bearer token
+        const sid = req.headers['studentid'];      // custom header
+        const isValidSession = await verifyStudentSession(token, sid);
+        if (!isValidSession) {
+            return res.status(401).json({ session_expired: true, success: false, message: "Invalid or expired session. Please log in again." });
+        }
         const { student_id, course_id, unit_id, sub_unit_id, questions, question_type } = req.body;
         // Validate required fields
         if (!student_id || !course_id || !unit_id || !sub_unit_id || !Array.isArray(questions) || !question_type) {
             return res.status(400).json({ success: false, message: "Missing required fields: student_id, course_id, unit_id, sub_unit_id, questions (array), or question_type" });
         }
-        const result = await saveMCQSubmission({ student_id, course_id, unit_id, sub_unit_id, questions, question_type});
+        const result = await saveMCQSubmission({ student_id, course_id, unit_id, sub_unit_id, questions, question_type });
         if (result.success) {
             res.status(200).json(result);
         } else {
@@ -476,6 +659,7 @@ export {
     handleDeleteStudent,
     handleGetCourseMetadataByBatchId,
     handleStudentLogin,
+    handleVerifyStudent,
     handleGetCourseforStudents,
     handleGetQuestionforStudent,
     handleCompileAndRun,

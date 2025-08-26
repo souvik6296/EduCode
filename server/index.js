@@ -114,7 +114,8 @@ const {
     handleCheckTestSecurityCode,
     handleGeminiChat,
     handleUploadStudentResource,
-    handleSaveMCQSubmission
+    handleSaveMCQSubmission,
+    handleVerifyStudent
 } = require("./students/students-middle-controler.js");
 
 
@@ -200,6 +201,7 @@ app.post("/students/test-result-status", handleGetTestResultStatus); // Get test
 app.post("/students/upload-image", uploadMiddleware.single("image"), handleUploadStudentImage); // Upload student image and get download URL
 app.post("/students/resume-test", handleResumeTest); // Resume test and save last submissions
 app.post("/students/save-mcq-submission", handleSaveMCQSubmission); // Save MCQ submission
+app.post("/students/verify-session", handleVerifyStudent); // Verify student session
 // Gemini AI Chatbot endpoint
 app.post("/students/gemini-chat", handleGeminiChat); // Chat with Gemini AI
 

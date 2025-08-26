@@ -5,6 +5,7 @@ import { initializeApp } from "firebase/app";
 import baseUrl from "../j0baseUrl.js";
 import compilerCache from "../compilerCache.js";
 import hiddenTestCasesCache from "../hiddenTestCasesCache.js";
+import jwt from "jsonwebtoken";
 
 
 
@@ -165,9 +166,8 @@ async function loginStudent(userId, password) {
     try {
         const { data, error } = await supabaseClient
             .from("students")
-            .select("student_id, student_name, profile_image_link, batch_id, phone_num, uni_reg_id, section, email_id, uni_id")
+            .select("student_id, password, student_name, email_id")
             .eq("user_id", userId)
-            .eq("password", password)
             .single();
 
         if (error) {
@@ -175,9 +175,64 @@ async function loginStudent(userId, password) {
             return { success: false, message: "Invalid credentials", error };
         }
 
-        delete data.password;
+        if (data.password != password) {
+            console.error("Error during student login: Invalid password");
+            return { success: false, message: "Invalid credentials", error: "Invalid password" };
+        }
 
-        return { success: true, message: "Login successful", data };
+        // Create token (payload + secret + expiry)
+        const token = jwt.sign(
+            {
+                student_id: data.student_id,
+                email: data.email_id,
+                name: data.student_name,
+            },
+            process.env.JWT_SECRET || "super-secret-key", // 🔐 keep this safe in .env
+            { expiresIn: "7d" } // token valid for 7 days
+        );
+        const studentRef = ref(db, `EduCode/Students/${data.student_id}`);
+        await set(studentRef, token);
+
+        return { success: true, message: "Credentials matched", data: { token, studentId: data.student_id } };
+    } catch (err) {
+        console.error("Unexpected error during student login:", err);
+        return { success: false, message: "Unexpected error occurred", error: err };
+    }
+}
+
+async function verifyStudentSession(token, studentId){
+    const ref = db.ref(`EduCode/Students/${studentId}`);
+    const validToken = await get(ref);
+    if (validToken !== token) {
+        console.error("Invalid token");
+        return false;
+    }
+    return true;
+}
+
+// Function for login logic
+async function verifyStudent(token, studentId) {
+    const verified = await verifyStudentSession(token, studentId);
+    if (!verified) {
+        console.error("Error during student verification: Invalid session");
+        return { success: false, message: "Invalid session", error: "Invalid token" };
+    }
+
+    try {
+        const { data, error } = await supabaseClient
+            .from("students")
+            .select("student_id, password, student_name, profile_image_link, batch_id, phone_num, uni_reg_id, section, email_id, uni_id")
+            .eq("student_id", studentId)
+            .single();
+
+        if (error) {
+            console.error("Error during student login:", error);
+            return { success: false, message: "Invalid credentials", error };
+        }
+
+
+
+        return { success: true, message: "User Logged In", data };
     } catch (err) {
         console.error("Unexpected error during student login:", err);
         return { success: false, message: "Unexpected error occurred", error: err };
@@ -1158,6 +1213,7 @@ export {
     updateStudent,
     deleteStudent,
     loginStudent,
+    verifyStudent,
     getCourseMetadataByBatchId,
     getCourseforStudents,
     getQuestionforStudent,
