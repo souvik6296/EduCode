@@ -432,6 +432,7 @@ async function getQuestionforStudent(courseId, unitId, subUnitId, studentId, que
                 return {
                     id,
                     ...rest,
+                    totalmarks: q["hidden-test-cases"] ? q["hidden-test-cases"].length * 10 : 0, // Assuming each hidden test case is worth 10 marks
                     lastSubmission: lastSubmission || null
                 };
             }));
@@ -468,14 +469,15 @@ async function getQuestionforStudent(courseId, unitId, subUnitId, studentId, que
         // Step 4: If no resumed data, pick fresh questions
         if (questionType === "Coding") {
             const codingQuestions = subUnitData.coding || {};
-            const questionToBeShown = subUnitData.question_to_be_shown || 2;
+            const questionToBeShown = Number(subUnitData["questions-to-show"]) || 2;
 
             const codingArray = Object.entries(codingQuestions).map(([id, q]) => ({ id, ...q }));
             const selected = codingArray.sort(() => Math.random() - 0.5).slice(0, questionToBeShown);
 
             // Remove compiler-code & hidden-test-cases and add empty lastSubmission
-            const cleanSelected = selected.map(({ ["compiler-code"]: _, ["hidden-test-cases"]: __, ...rest }) => ({
+            const cleanSelected = selected.map(({ ["compiler-code"]: _, ["hidden-test-cases"]: h, ...rest }) => ({
                 ...rest,
+                totalmarks: h ? h.length * 10 : 0, // Assuming each hidden test case is worth 10 marks
                 lastSubmission: null
             }));
 
