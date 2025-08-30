@@ -115,7 +115,8 @@ const {
     handleGeminiChat,
     handleUploadStudentResource,
     handleSaveMCQSubmission,
-    handleVerifyStudent
+    handleVerifyStudent,
+    sendKeytoBrowser
 } = require("./students/students-middle-controler.js");
 
 
@@ -326,6 +327,10 @@ app.get("/getegress/:egressId", async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
+
+app.get("/getKey", sendKeytoBrowser);
+
 
 
 // Start the Server

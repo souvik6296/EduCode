@@ -10,15 +10,28 @@ const firebaseApp = initializeApp(firebaseConfig);
 
 const db = getDatabase(firebaseApp);
 
+//key for encryting every data
+const secretKey1 = "3c6876390ecc3c010aa44fba1300dd67db632aff9bba01880213b8012419f9cd";
+//key to encrypt secretkey1
 
+const secretKey2 = "dd62cc4fd422cd179bc5501ed0f4c3b252af92bd01c340647fe8549fae5bb6ad";
 
-async function verifyStudentSession(token, studentId){
+async function sendKeytoBrowser(req, res) {
+    const data = {
+        s_key: secretKey1
+    }
+
+    const ciphertext = CryptoJS.AES.encrypt(JSON.stringify(data), secretKey2).toString();
+    return res.status(200).json({ success: true, data: ciphertext });
+}
+
+async function verifyStudentSession(token, studentId) {
     const sref = ref(db, `EduCode/Students/${studentId}`);
     const validToken = await get(sref);
     if (validToken.exists() && validToken.val() == token) {
         return true;
     }
-    if(!validToken.exists()){
+    if (!validToken.exists()) {
         console.error(`No token found for student ${studentId}`);
     }
     console.error(`Invalid token ${token}  && ${validToken.val()}`);
@@ -653,6 +666,7 @@ async function handleSaveMCQSubmission(req, res) {
 
 // Export all controllers
 export {
+    sendKeytoBrowser,
     handleInsertStudent,
     handleGetAllStudents,
     handleGetStudentById,
