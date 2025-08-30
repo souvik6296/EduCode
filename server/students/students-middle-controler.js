@@ -2,6 +2,7 @@ const { chatWithGemini } = require("./gemini-ai.js");
 import { getDatabase, ref, set, push, update, remove, get, child } from "firebase/database";
 // import app from "../firebase-config.js";
 import { initializeApp } from "firebase/app";
+import CryptoJS from 'crypto-js';
 // Firebase configuration
 const firebaseConfig = {
     databaseURL: "https://ai-projects-d261b-default-rtdb.firebaseio.com/"
